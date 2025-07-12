@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>VastVideo-Go - 极速多源影视聚合播放器 | Aggregated Streaming Player</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(135deg, #18192b 0%, #23244a 100%);
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Montserrat', sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      box-sizing: border-box;
+      overflow-x: hidden;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 48px 18px 80px 18px;
+    }
+    .logo {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 3.2rem;
+      font-weight: 800;
+      color: #7c3aed;
+      letter-spacing: 2.5px;
+      margin-bottom: 10px;
+      text-shadow: 0 6px 32px #6c63ff33, 0 1px 0 #fff1;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+    .logo-icon {
+      width: 48px; height: 48px;
+      background: linear-gradient(135deg, #6c63ff 60%, #8b5cf6 100%);
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.1rem;
+      color: #fff;
+      box-shadow: 0 2px 12px #6c63ff44;
+    }
+    .subtitle {
+      font-size: 1.25rem;
+      color: #b3b6d4;
+      margin-bottom: 36px;
+      letter-spacing: 1px;
+    }
+    .section {
+      margin-bottom: 56px;
+      background: rgba(35,36,74,0.85);
+      border-radius: 22px;
+      box-shadow: 0 8px 36px 0 #6c63ff22, 0 1.5px 0 #fff1;
+      padding: 40px 32px 36px 32px;
+      position: relative;
+      overflow: hidden;
+      border: 1.5px solid #2a2b4a;
+      transition: box-shadow 0.3s;
+    }
+    .section:hover {
+      box-shadow: 0 12px 48px 0 #8b5cf644, 0 2px 0 #fff2;
+    }
+    .section-title {
+      font-size: 2rem;
+      color: #6c63ff;
+      font-weight: 700;
+      margin-bottom: 18px;
+      letter-spacing: 1.5px;
+      text-shadow: 0 2px 12px #6c63ff22;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .section-title-en {
+      font-size: 1.1rem;
+      color: #b3b6d4;
+      font-weight: 400;
+      margin-left: 8px;
+      letter-spacing: 1px;
+    }
+    .features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 22px;
+      margin-bottom: 18px;
+      justify-content: space-between;
+    }
+    .feature {
+      flex: 1 1 240px;
+      background: linear-gradient(135deg, #23244a 60%, #2a2b4a 100%);
+      border-radius: 14px;
+      padding: 22px 18px;
+      color: #fff;
+      box-shadow: 0 2px 12px #6c63ff22;
+      min-width: 200px;
+      min-height: 110px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      border: 1px solid #2a2b4a;
+      transition: box-shadow 0.2s, transform 0.2s;
+      position: relative;
+    }
+    .feature:hover {
+      box-shadow: 0 8px 32px #8b5cf644;
+      transform: translateY(-4px) scale(1.03);
+    }
+    .feature-title {
+      color: #8b5cf6;
+      font-weight: 700;
+      font-size: 1.18rem;
+      letter-spacing: 0.5px;
+    }
+    .feature-title-en {
+      color: #b3b6d4;
+      font-size: 0.98rem;
+      font-weight: 400;
+      margin-left: 6px;
+    }
+    .screenshots {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 32px;
+      justify-content: center;
+      margin-bottom: 18px;
+    }
+    .screenshot {
+      background: linear-gradient(135deg, #23244a 60%, #2a2b4a 100%);
+      border-radius: 18px;
+      box-shadow: 0 4px 24px #6c63ff22;
+      width: 340px;
+      height: 210px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #b3b6d4;
+      font-size: 1.18rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      position: relative;
+      overflow: hidden;
+      border: 2px solid #2a2b4a;
+      transition: box-shadow 0.2s, transform 0.2s;
+      cursor: pointer;
+      animation: fadein 1.2s;
+    }
+    .screenshot:hover {
+      box-shadow: 0 8px 32px #8b5cf644;
+      transform: scale(1.04);
+    }
+    .screenshot-label {
+      position: absolute;
+      bottom: 10px; left: 0; right: 0;
+      text-align: center;
+      color: #8b5cf6;
+      font-size: 1rem;
+      font-weight: 600;
+      background: rgba(24,25,43,0.7);
+      padding: 2px 0;
+      border-radius: 0 0 12px 12px;
+      letter-spacing: 1px;
+    }
+    .install {
+      background: linear-gradient(135deg, #23244a 60%, #2a2b4a 100%);
+      border-radius: 14px;
+      padding: 22px 18px;
+      color: #fff;
+      margin-bottom: 18px;
+      font-size: 1.08rem;
+      box-shadow: 0 2px 8px #6c63ff22;
+      border: 1px solid #2a2b4a;
+    }
+    .code {
+      background: #18192b;
+      color: #b3b6d4;
+      font-family: monospace;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 1.02rem;
+      margin: 8px 0;
+      display: block;
+      overflow-x: auto;
+      border: 1px solid #23244a;
+    }
+    .footer {
+      text-align: center;
+      color: #b3b6d4;
+      font-size: 1.05rem;
+      margin-top: 64px;
+      padding-bottom: 32px;
+      letter-spacing: 1px;
+    }
+    a {
+      color: #6c63ff;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    a:hover {
+      color: #8b5cf6;
+      text-decoration: underline;
+    }
+    hr {
+      border: none;
+      border-top: 1.5px solid #2a2b4a;
+      margin: 36px 0 32px 0;
+      opacity: 0.7;
+    }
+    @media (max-width: 900px) {
+      .container { max-width: 99vw; }
+      .screenshots { gap: 16px; }
+      .screenshot { width: 98vw; max-width: 340px; height: 140px; font-size: 1rem; }
+      .section { padding: 18px 6px; }
+      .features { flex-direction: column; gap: 12px; }
+    }
+    @media (max-width: 600px) {
+      .container { padding: 8px 1vw 24px 1vw; }
+      .logo { font-size: 2.1rem; }
+      .section-title { font-size: 1.2rem; }
+      .screenshot { height: 90px; }
+    }
+    @keyframes fadein {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <span class="logo-icon">▶️</span> VastVideo-Go
+    </div>
+    <div class="subtitle">极速多源影视聚合播放器 · 开源 · 全端适配 · 极速体验</div>
+
+    <div class="section">
+      <div class="section-title">项目简介</div>
+      <div>VastVideo-Go 是一款基于 Go 后端和现代前端技术开发的多源影视聚合播放器，支持 PC 与移动端自适应，聚合主流资源站，极速搜索、高清播放，界面美观，体验流畅。适合技术爱好者、家庭用户、影视发烧友等多种场景。</div>
+    </div>
+
+
+
+    <div class="section">
+      <div class="section-title">主要功能亮点</div>
+      <div class="features">
+        <div class="feature">
+          <div class="feature-title">多源聚合</div>
+          支持主流资源站一键聚合，自动切换、优选资源，内容丰富。
+        </div>
+        <div class="feature">
+          <div class="feature-title">极速搜索</div>
+          全局异步搜索，支持多源并发，结果秒级返回，体验极致流畅。
+        </div>
+        <div class="feature">
+          <div class="feature-title">高清播放</div>
+          支持4K/1080P/720P等多分辨率，自动识别，原画播放不卡顿。
+        </div>
+        <div class="feature">
+          <div class="feature-title">全端适配</div>
+          移动端、PC端自适应布局，触控/鼠标操作均友好，响应式设计。
+        </div>
+        <div class="feature">
+          <div class="feature-title">开源可定制</div>
+          完全开源，支持二次开发、私有部署，社区活跃。
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">安装与使用</div>
+      <div class="install">
+        <b>1. 获取源码：</b>
+        <span class="code">git clone https://github.com/VastPools/VastVideo-Go.git</span>
+        <b>2. 启动后端（Linux/macOS）：</b>
+        <span class="code">cd VastVideo-Go &amp;&amp; ./build.sh &amp;&amp; ./vastvideo-go</span>
+        <b>3. Windows 直接运行：</b>
+        <span class="code">双击 vastvideo-go.exe 或运行 start.bat</span>
+        <b>4. macOS 直接运行：</b>
+        <span class="code">双击 vastvideo-go 或在终端运行 ./vastvideo-go</span>
+        <b>5. Docker 一键运行：</b>
+        <div style="margin-bottom:6px;color:#b3b6d4;">x86 架构：</div>
+        <span class="code">docker run -d --name vastvideo-go -p 8228:8228 vastpools/vastvideo-go:2.0.0</span>
+        <div style="margin-bottom:6px;color:#b3b6d4;">ARM 架构（如树莓派、部分 Mac）：</div>
+        <span class="code">docker run -d --name vastvideo-go -p 8228:8228 vastpools/vastvideo-go:2.0.0</span>
+        <b>6. 访问前端：</b>
+        <span class="code">浏览器访问 http://<ip>:8228</span>
+        <b>7. 移动端体验：</b>
+        <span class="code">手机浏览同一地址，自动适配移动端界面</span>
+      </div>
+      <div style="color:#b3b6d4;font-size:1.05rem;">* 详细配置与高级玩法请参考项目 README 或社区文档。</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">开源与社区</div>
+      <div>
+        VastVideo-Go 遵循 MIT 协议，完全开源，欢迎 Star、Fork、提 Issue 与 PR。<br>
+        GitHub：<a href="https://github.com/VastPools/VastVideo-Go" target="_blank">https://github.com/VastPools/VastVideo-Go</a><br>
+        社区交流群、文档与教程请见项目主页。
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">联系我们</div>
+      <div>
+        邮箱：<a href="mailto:contact@vastvideo.com">benson.vast@hotmail.com</a><br>
+        如有合作、定制、技术支持等需求，欢迎邮件联系。
+      </div>
+    </div>
+
+    <div class="footer">
+      &copy; 2024 VastVideo-Go. 由 Go &amp; 现代前端驱动
+    </div>
+  </div>
+</body>
+</html> 
