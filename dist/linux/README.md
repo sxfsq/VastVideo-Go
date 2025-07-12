@@ -278,7 +278,7 @@ VastVideo-Go 遵循 MIT 协议，完全开源，欢迎 Star、Fork、提 Issue �
 如有问题或建议，请通过以下方式联系：
 
 - 提交 Issue: [GitHub Issues](https://github.com/VastPools/VastVideo-Go/issues)
-- 邮箱: benson.vast@hotmail.com
+- 邮箱: vastpools@hotmail.com
 - GitHub: [https://github.com/VastPools/VastVideo-Go](https://github.com/VastPools/VastVideo-Go)
 
 如有合作、定制、技术支持等需求，欢迎邮件联系。
