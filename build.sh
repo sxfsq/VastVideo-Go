@@ -96,10 +96,15 @@ build_linux() {
         GOOS=linux GOARCH=386 go build -ldflags="-s -w" -o "$BUILD_DIR/VastVideo-Go-linux-386" .
         print_success "Linux 386 版本构建完成: $BUILD_DIR/VastVideo-Go-linux-386"
         
+        # 构建 ARM64 版本
+        GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o "$BUILD_DIR/VastVideo-Go-linux-arm64" .
+        print_success "Linux ARM64 版本构建完成: $BUILD_DIR/VastVideo-Go-linux-arm64"
+        
         # 创建 Linux 发布包
         mkdir -p "$DIST_DIR/linux"
         cp "$BUILD_DIR/VastVideo-Go-linux-amd64" "$DIST_DIR/linux/"
         cp "$BUILD_DIR/VastVideo-Go-linux-386" "$DIST_DIR/linux/"
+        cp "$BUILD_DIR/VastVideo-Go-linux-arm64" "$DIST_DIR/linux/"
         cp config/config.ini "$DIST_DIR/linux/" 2>/dev/null || true
         cp README.md "$DIST_DIR/linux/" 2>/dev/null || true
         cp USAGE.md "$DIST_DIR/linux/" 2>/dev/null || true
