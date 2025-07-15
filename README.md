@@ -83,10 +83,10 @@ go build -o vastvideo-go .
 
 ```bash
 # x86 架构
-docker run -d --name vastvideo-go -p 8228:8228 vastpools/vastvideo-go:2.0.0
+docker run -d --name vastvideo-go -p 8228:8228 vastpools/vastvideo-go:latest
 
 # ARM 架构（如树莓派、部分 Mac）
-docker run -d --name vastvideo-go -p 8228:8228 vastpools/vastvideo-go:2.0.0
+docker run -d --name vastvideo-go -p 8228:8228 vastpools/vastvideo-go:latest
 ```
 
 ### 运行程序
