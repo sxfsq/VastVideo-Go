@@ -1,0 +1,13 @@
+# 忽略不必要的文件
+.git
+.gitignore
+README.md
+*.md
+build/
+dist/
+docker/
+*.sh
+*.bat
+*.zip
+*.tar.gz
+test_*
