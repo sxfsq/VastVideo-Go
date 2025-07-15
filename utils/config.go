@@ -40,6 +40,10 @@ type Config struct {
 		ProxyService bool `ini:"proxy_service"`
 		DoubanAPI    bool `ini:"douban_api"`
 	} `ini:"features"`
+	Filter struct {
+		AdminPassword      string `ini:"admin_password"`
+		DefaultAdultFilter bool   `ini:"default_adult_filter"`
+	} `ini:"filter"`
 }
 
 // LoadConfigFromData 从配置数据加载配置

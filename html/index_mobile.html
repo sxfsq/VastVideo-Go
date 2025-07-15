@@ -399,6 +399,52 @@
       pointer-events: auto;
     }
 
+    /* 切换开关样式 */
+    .toggle-switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      background: #444;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+      background: #6c63ff;
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+      transform: translateX(20px);
+    }
+
+    .toggle-slider {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: #fff;
+      border-radius: 50%;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    /* 开关悬停效果 */
+    .toggle-switch:hover .toggle-slider {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .toggle-switch:active .toggle-slider {
+      transform: scale(0.95);
+    }
+
     /* 主内容区 */
     .main-content {
       margin-top: 72px; /* 加大顶部菜单与内容区的间距，更舒适 */
@@ -1894,7 +1940,55 @@
       </div>
     </div>
     <div class="filter-section" style="border-bottom:none;position:relative;">
-      <button id="toggleSourceSelectionBtn" style="width:100%;background:#23244a;color:#b3b6d4;border:none;border-radius:8px;padding:12px 0;font-size:15px;font-weight:600;cursor:pointer;">视频源选择</button>
+      <button id="toggleSourceSelectionBtn" style="width:100%;background:#23244a;color:#b3b6d4;border:none;border-radius:8px;padding:12px 0;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:12px;">视频源选择</button>
+      <button id="filterSettingsBtn" style="width:100%;background:#23244a;color:#b3b6d4;border:none;border-radius:8px;padding:12px 0;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:12px;">过滤设置</button>
+    </div>
+    
+    <!-- 过滤设置区域 -->
+    <div id="filterSettingsArea" style="display:none;border-top:1px solid #3a3b5a;padding:16px;">
+      <!-- 密码输入界面 -->
+      <div id="passwordSection" style="margin-bottom:16px;">
+        <h4 style="color:#fff;margin-bottom:12px;font-size:14px;">管理员验证</h4>
+        <div style="margin-bottom:12px;">
+          <input type="password" id="adminPassword" placeholder="请输入管理员密码" style="width:100%;padding:12px;border:1px solid #3a3b5a;border-radius:8px;background:#18192b;color:#fff;font-size:14px;outline:none;box-sizing:border-box;">
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button id="submitPassword" style="flex:1;background:#6c63ff;color:#fff;border:none;border-radius:6px;padding:8px;font-size:12px;cursor:pointer;">确认</button>
+          <button id="cancelPassword" style="flex:1;background:#444;color:#fff;border:none;border-radius:6px;padding:8px;font-size:12px;cursor:pointer;">取消</button>
+        </div>
+      </div>
+      
+      <!-- 过滤设置界面 -->
+      <div id="filterSettingsSection" style="display:none;">
+        <h4 style="color:#fff;margin-bottom:12px;font-size:14px;">内容过滤</h4>
+        <div style="margin-bottom:16px;">
+          <label style="display:flex;align-items:center;justify-content:space-between;color:#fff;font-size:13px;margin-bottom:8px;">
+            <span>包含成人内容</span>
+            <div class="toggle-switch">
+              <input type="checkbox" id="adultContentToggle" style="display:none;">
+              <span class="toggle-slider"></span>
+            </div>
+          </label>
+          <p style="color:#b3b6d4;font-size:11px;margin:0;">开启后将过滤伦理片、理论片类型的内容</p>
+        </div>
+        
+        <div style="margin-bottom:16px;">
+          <label style="display:flex;align-items:center;justify-content:space-between;color:#fff;font-size:13px;margin-bottom:8px;">
+            <span>修改管理员密码</span>
+            <button id="changePasswordBtn" style="background:#444;color:#fff;border:none;border-radius:4px;padding:4px 8px;font-size:11px;cursor:pointer;">修改</button>
+          </label>
+        </div>
+        
+        <div id="changePasswordSection" style="display:none;margin-bottom:16px;">
+          <input type="password" id="newPassword" placeholder="新密码" style="width:100%;padding:10px;border:1px solid #3a3b5a;border-radius:6px;background:#18192b;color:#fff;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:8px;">
+          <input type="password" id="confirmPassword" placeholder="确认新密码" style="width:100%;padding:10px;border:1px solid #3a3b5a;border-radius:6px;background:#18192b;color:#fff;font-size:13px;outline:none;box-sizing:border-box;">
+        </div>
+        
+        <div style="display:flex;gap:8px;">
+          <button id="saveFilterSettings" style="flex:1;background:#6c63ff;color:#fff;border:none;border-radius:6px;padding:8px;font-size:12px;cursor:pointer;">保存设置</button>
+          <button id="closeFilterSettings" style="flex:1;background:#444;color:#fff;border:none;border-radius:6px;padding:8px;font-size:12px;cursor:pointer;">关闭</button>
+        </div>
+      </div>
     </div>
   <!-- 在aside末尾插入覆盖层 -->
   <div id="sourceSelectionArea" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:#23244a;z-index:1000;padding:16px;overflow-y:auto;">
@@ -1915,6 +2009,8 @@
 
   <!-- 遮罩层 -->
   <div class="overlay" id="overlay"></div>
+
+
 
 
 
@@ -2059,10 +2155,10 @@
 
 
   <!-- 友好提示组件 -->
-  <div id="toastContainer" style="position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9999;pointer-events:none;"></div>
+  <div id="toastContainer" style="position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:9999;pointer-events:none;"></div>
 
   <!-- 移动端提示容器 -->
-  <div id="mobileToastContainer" style="position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:10001;pointer-events:none;"></div>
+  <div id="mobileToastContainer" style="position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:10001;pointer-events:none;"></div>
 
   <script>
     // 友好提示函数
@@ -2835,12 +2931,22 @@
         return;
       }
       
-      appendVideos(subjects);
+      // 应用过滤逻辑
+      const filteredSubjects = filterVideoContent(subjects);
+      console.log('过滤后的推荐内容数量:', filteredSubjects.length, '个');
+      
+      if (!filteredSubjects.length) {
+        videoGrid.innerHTML = '<div class="no-results"><div class="no-results-icon">📺</div>暂无推荐内容</div>';
+        return;
+      }
+      
+      appendVideos(filteredSubjects);
     }
 
     // 添加视频卡片
     function appendVideos(videos) {
       console.log('添加视频卡片:', videos.length, '个');
+      
       if (!videoGrid) {
         console.error('videoGrid元素不存在');
         return;
@@ -3251,6 +3357,192 @@
         console.log('视频源选择区域已关闭');
       };
     });
+
+    // 过滤设置事件处理
+    document.addEventListener('DOMContentLoaded', function() {
+      // 初始化过滤设置状态
+      const filterEnabled = isFilterEnabled();
+      console.log('🔍 页面加载时过滤设置状态:', filterEnabled ? '启用过滤' : '不过滤');
+      
+      // 过滤设置按钮点击事件
+      document.getElementById('filterSettingsBtn').onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const filterArea = document.getElementById('filterSettingsArea');
+        const isVisible = filterArea.style.display !== 'none';
+        
+        if (!isVisible) {
+          // 显示过滤设置区域
+          showFilterSettingsArea();
+        } else {
+          // 隐藏过滤设置区域
+          hideFilterSettingsArea();
+        }
+      };
+
+      // 提交密码按钮
+      document.getElementById('submitPassword').onclick = function() {
+        const password = document.getElementById('adminPassword').value;
+        const storedPassword = localStorage.getItem('vastvideo_admin_password');
+        
+        // 检查本地存储的密码，如果为空或null则使用默认密码
+        let correctPassword = (storedPassword && storedPassword.trim() !== '') ? storedPassword : '8228';
+        
+        console.log('🔐 密码验证:', { input: password, stored: storedPassword, correct: correctPassword });
+        
+        if (password === correctPassword) {
+          showFilterSettingsSection();
+        } else {
+          showToast('密码错误', 'error', 2000);
+        }
+      };
+
+      // 取消密码按钮
+      document.getElementById('cancelPassword').onclick = function() {
+        hideFilterSettingsArea();
+      };
+
+      // 修改密码按钮
+      document.getElementById('changePasswordBtn').onclick = function() {
+        const changeSection = document.getElementById('changePasswordSection');
+        changeSection.style.display = changeSection.style.display === 'none' ? 'block' : 'none';
+      };
+
+      // 保存过滤设置
+      document.getElementById('saveFilterSettings').onclick = function() {
+        const adultContentEnabled = document.getElementById('adultContentToggle').checked;
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        
+        // 保存过滤设置到本地存储
+        localStorage.setItem('vastvideo_adult_filter', JSON.stringify(adultContentEnabled));
+        
+        // 如果输入了新密码，保存新密码
+        if (newPassword && newPassword === confirmPassword) {
+          localStorage.setItem('vastvideo_admin_password', newPassword);
+          showToast('密码已更新', 'success', 2000);
+          document.getElementById('changePasswordSection').style.display = 'none';
+          document.getElementById('newPassword').value = '';
+          document.getElementById('confirmPassword').value = '';
+        } else if (newPassword && newPassword !== confirmPassword) {
+          showToast('两次输入的密码不一致', 'error', 2000);
+          return;
+        }
+        
+        showToast('过滤设置已保存', 'success', 2000);
+        hideFilterSettingsArea();
+      };
+
+      // 关闭过滤设置
+      document.getElementById('closeFilterSettings').onclick = function() {
+        hideFilterSettingsArea();
+      };
+
+      // 密码输入框回车事件
+      document.getElementById('adminPassword').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          document.getElementById('submitPassword').click();
+        }
+      });
+
+      // 新密码输入框回车事件
+      document.getElementById('newPassword').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          document.getElementById('saveFilterSettings').click();
+        }
+      });
+
+      // 确认密码输入框回车事件
+      document.getElementById('confirmPassword').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          document.getElementById('saveFilterSettings').click();
+        }
+      });
+
+      // 过滤开关点击事件
+      document.getElementById('adultContentToggle').addEventListener('change', function() {
+        console.log('🔍 过滤开关状态改变:', this.checked);
+        // 立即保存到本地存储
+        localStorage.setItem('vastvideo_adult_filter', JSON.stringify(this.checked));
+        console.log('🔍 过滤设置已保存到本地存储:', this.checked);
+      });
+    });
+
+    // 显示过滤设置区域
+    function showFilterSettingsArea() {
+      const filterArea = document.getElementById('filterSettingsArea');
+      const passwordSection = document.getElementById('passwordSection');
+      const filterSection = document.getElementById('filterSettingsSection');
+      
+      // 重置界面状态
+      passwordSection.style.display = 'block';
+      filterSection.style.display = 'none';
+      document.getElementById('adminPassword').value = '';
+      document.getElementById('changePasswordSection').style.display = 'none';
+      document.getElementById('newPassword').value = '';
+      document.getElementById('confirmPassword').value = '';
+      
+      // 显示过滤设置区域
+      filterArea.style.display = 'block';
+    }
+
+    // 隐藏过滤设置区域
+    function hideFilterSettingsArea() {
+      const filterArea = document.getElementById('filterSettingsArea');
+      filterArea.style.display = 'none';
+    }
+
+    // 显示过滤设置界面
+    function showFilterSettingsSection() {
+      const passwordSection = document.getElementById('passwordSection');
+      const filterSection = document.getElementById('filterSettingsSection');
+      
+      // 获取当前过滤设置并设置开关状态
+      const filterEnabled = isFilterEnabled();
+      document.getElementById('adultContentToggle').checked = filterEnabled;
+      
+      // 切换界面
+      passwordSection.style.display = 'none';
+      filterSection.style.display = 'block';
+    }
+
+    // 检查是否启用过滤（true=启用过滤，false=不过滤）
+    function isFilterEnabled() {
+      const stored = localStorage.getItem('vastvideo_adult_filter');
+      // 如果没有设置过，使用默认状态（true=启用过滤）
+      if (stored === null) {
+        console.log('🔍 过滤设置未初始化，使用默认状态: 启用过滤');
+        return true;
+      }
+      const enabled = JSON.parse(stored);
+      console.log('🔍 过滤设置状态:', enabled ? '启用过滤' : '不过滤');
+      return enabled;
+    }
+
+    // 过滤视频内容
+    function filterVideoContent(videos) {
+      const filterEnabled = isFilterEnabled();
+      console.log('🔍 执行过滤检查 - 设置状态:', filterEnabled ? '启用过滤' : '不过滤');
+      
+      if (filterEnabled) {
+        const originalCount = videos.length;
+        const filteredVideos = videos.filter(video => {
+          // 检查不同的字段名
+          const typeName = video.type_name || video.type || '';
+          // 过滤伦理片和理论片
+          const shouldFilter = typeName === '伦理片' || typeName === '理论片';
+          if (shouldFilter) {
+            console.log('🚫 过滤视频:', video.vod_name || video.title, '类型:', typeName);
+          }
+          return !shouldFilter;
+        });
+        console.log(`🔍 过滤结果: ${originalCount} -> ${filteredVideos.length} 个视频`);
+        return filteredVideos;
+      }
+      console.log('🔍 不过滤，显示所有视频');
+      return videos;
+    }
 
     // 移动端多源搜索
     function mobilePerformSearch(info) {
@@ -3804,6 +4096,11 @@
     // 渲染移动端搜索结果
     function renderMobileSearchResults(videos, keyword, isLatest) {
       console.log('渲染移动端搜索结果:', videos.length, '个视频, isLatest:', isLatest);
+      
+      // 应用过滤逻辑
+      const filteredVideos = filterVideoContent(videos);
+      console.log('过滤后的视频数量:', filteredVideos.length, '个');
+      
       const searchGrid = document.getElementById('searchGridMobile');
       const header = document.getElementById('searchHeaderMobile');
       
@@ -3811,7 +4108,7 @@
       console.log('清空搜索网格，移除加载卡片');
       searchGrid.innerHTML = '';
       
-      if (!videos.length) {
+      if (!filteredVideos.length) {
         if (isLatest) {
           header.innerHTML = `<span style='font-size:18px;font-weight:600;'>暂无最新视频</span>`;
           searchGrid.innerHTML = `<div class="no-results"><div class="no-results-icon">📺</div><div style="margin-bottom: 8px; font-weight: 600;">暂无最新视频</div><div style="font-size: 14px; color: #888;">请稍后再试或更换视频源</div></div>`;
@@ -3836,7 +4133,7 @@
       }
       
       // 渲染搜索结果
-      videos.forEach(video => {
+      filteredVideos.forEach(video => {
         
         // 根据数据源处理不同的字段名
         let title, cover, year, type, rate;
@@ -3909,6 +4206,11 @@
     // 渲染单个源的结果
     function renderSourceResults(videos, sourceName, isFirstResult) {
       console.log(`渲染源 ${sourceName} 的结果:`, videos.length, '个视频, isFirstResult:', isFirstResult);
+      
+      // 应用过滤逻辑
+      const filteredVideos = filterVideoContent(videos);
+      console.log(`源 ${sourceName} 过滤后的视频数量:`, filteredVideos.length, '个');
+      
       const searchGrid = document.getElementById('searchGridMobile');
       
       // 只有在第一个源的第一个结果时才清空加载状态
@@ -3918,7 +4220,7 @@
       }
       
       // 渲染这个源的视频
-      videos.forEach(video => {
+      filteredVideos.forEach(video => {
         
         // 根据数据源处理不同的字段名
         let title, cover, year, type, rate;
@@ -6363,5 +6665,5 @@
       setTimeout(initHeaderTitleClick, 100);
     });
   </script>
-</body>
-</html>
+  </body>
+  </html>

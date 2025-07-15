@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -100,6 +101,9 @@ func main() {
 	// 添加视频源API路由
 	http.HandleFunc("/api/sources", sourcesConfig.HandleSourcesAPI)
 	http.HandleFunc("/api/source_search", sourcesConfig.HandleSourceSearchAPI)
+
+	// 添加过滤配置API路由
+	http.HandleFunc("/api/filter_config", filterConfigHandler)
 
 	// 获取本地IP地址
 	localIP := components.GetLocalIP()
@@ -271,6 +275,38 @@ func aboutHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Write(content)
 	log.Printf("📄 返回关于页面 html/about.html [IP:%s]", utils.GetRequestIP(r))
+}
+
+func filterConfigHandler(w http.ResponseWriter, r *http.Request) {
+	// 设置CORS头
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+	// 处理OPTIONS请求
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	// 只允许GET请求
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// 返回过滤配置
+	response := map[string]interface{}{
+		"success": true,
+		"data": map[string]interface{}{
+			"admin_password":       GlobalConfig.Filter.AdminPassword,
+			"default_adult_filter": GlobalConfig.Filter.DefaultAdultFilter,
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+	log.Printf("✅ /api/filter_config 请求 [IP:%s]", utils.GetRequestIP(r))
 }
 
 // checkAndKillPortProcess 检查端口是否被占用，如果被占用则杀死相关进程
