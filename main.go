@@ -48,8 +48,7 @@ func main() {
 
 	// 定义命令行参数
 	var (
-		noOpen = flag.Bool("no-open", !GlobalConfig.Browser.AutoOpen, "不自动打开浏览器")
-		port   = flag.String("port", GlobalConfig.Server.Port, "服务端口")
+		port = flag.String("port", GlobalConfig.Server.Port, "服务端口")
 	)
 	flag.Parse()
 
@@ -136,33 +135,7 @@ func main() {
 	// 等待一秒确保服务器启动
 	time.Sleep(1 * time.Second)
 
-	// 根据参数决定是否打开浏览器
-	if !*noOpen {
-		homeURL := fmt.Sprintf("http://%s:%s/", localIP, *port)
-
-		// 检查操作系统，在Windows和macOS上自动启动浏览器
-		if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
-			log.Printf("🌐 检测到 %s 系统，自动启动浏览器...", runtime.GOOS)
-			serverReady := make(chan bool, 1)
-
-			// 启动浏览器
-			go func() {
-				// 等待服务器就绪
-				time.Sleep(2 * time.Second)
-				serverReady <- true
-
-				if err := components.StartBrowserWithServer(homeURL, serverReady); err != nil {
-					log.Printf("❌ 浏览器启动失败: %v", err)
-				}
-			}()
-		} else {
-			log.Printf("🐧 检测到 Linux 系统，不自动启动浏览器")
-			log.Printf("📱 请手动访问: %s", homeURL)
-		}
-	} else {
-		log.Println("🚫 已禁用自动打开浏览器")
-		log.Printf("📱 访问地址: http://%s:%s/", localIP, *port)
-	}
+	log.Printf("📱 服务器已启动，访问地址: http://%s:%s/", localIP, *port)
 
 	// 设置信号处理
 	sigChan := make(chan os.Signal, 1)

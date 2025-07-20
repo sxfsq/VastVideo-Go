@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HeaderMenu 测试页面</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #18192b;
+      color: #fff;
+      min-height: 100vh;
+      padding-top: 52px;
+    }
+    
+    .test-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      height: 52px;
+      background: #23244a;
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    
+    .menu-btn {
+      width: 40px;
+      height: 40px;
+      background: #23244a;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      transition: background 0.2s;
+    }
+    
+    .menu-btn span {
+      width: 22px;
+      height: 3px;
+      background: #fff;
+      border-radius: 2px;
+      margin: 2.5px 0;
+      display: block;
+    }
+    
+    .header-title {
+      flex: 1;
+      text-align: center;
+      font-size: 1.4rem;
+      color: #fff;
+      font-weight: 700;
+      margin: 0;
+    }
+    
+    .about-btn {
+      width: 40px;
+      height: 40px;
+      background: #23244a;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .content {
+      padding: 20px;
+      text-align: center;
+    }
+    
+    .test-item {
+      background: #23244a;
+      margin: 10px 0;
+      padding: 15px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <!-- 测试顶部菜单 -->
+  <header class="test-header">
+    <button class="menu-btn">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+    
+    <h1 class="header-title">VastVideo-Go</h1>
+    
+    <button class="about-btn">
+      <svg viewBox="0 0 24 24" width="20" height="20">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" stroke="currentColor" stroke-width="2" fill="none"/>
+        <line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" stroke-width="2"/>
+      </svg>
+    </button>
+  </header>
+  
+  <!-- 测试内容 -->
+  <div class="content">
+    <h2>HeaderMenu 测试页面</h2>
+    <p>如果您能看到顶部的菜单栏，说明CSS样式正常工作。</p>
+    
+    <div class="test-item">
+      <h3>测试项目 1</h3>
+      <p>这是一个测试内容块</p>
+    </div>
+    
+    <div class="test-item">
+      <h3>测试项目 2</h3>
+      <p>这是另一个测试内容块</p>
+    </div>
+    
+    <div class="test-item">
+      <h3>测试项目 3</h3>
+      <p>检查页面滚动时顶部菜单是否保持固定</p>
+    </div>
+    
+    <div style="height: 200vh; background: linear-gradient(to bottom, #18192b, #23244a);">
+      <h3 style="padding-top: 50vh;">长内容区域</h3>
+      <p>滚动页面测试HeaderMenu是否始终保持在顶部</p>
+    </div>
+  </div>
+  
+  <script>
+    document.querySelector('.menu-btn').addEventListener('click', () => {
+      alert('菜单按钮点击正常！')
+    })
+    
+    document.querySelector('.about-btn').addEventListener('click', () => {
+      alert('关于按钮点击正常！')
+    })
+    
+    document.querySelector('.header-title').addEventListener('click', () => {
+      alert('标题点击正常！')
+    })
+  </script>
+</body>
+</html> 

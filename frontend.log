@@ -1,0 +1,37 @@
+
+> vastvideo-go-frontend@1.0.0 dev
+> vite
+
+
+  VITE v5.4.19  ready in 101 ms
+
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: http://10.147.18.183:3000/
+  ➜  Network: http://192.168.10.88:3000/
+23:22:16 [vite] Pre-transform error: At least one <template> or <script> is required in a single file component. /Users/benson/code/github/VastVideo-Go/web/src/components/SearchResultsSidebar.vue
+23:22:16 [vite] Internal server error: At least one <template> or <script> is required in a single file component. /Users/benson/code/github/VastVideo-Go/web/src/components/SearchResultsSidebar.vue
+  Plugin: vite:vue
+  File: /Users/benson/code/github/VastVideo-Go/web/src/components/SearchResultsSidebar.vue
+      at Object.parse$1 [as parse] (/Users/benson/code/github/VastVideo-Go/web/node_modules/@vue/compiler-sfc/dist/compiler-sfc.cjs.js:1864:7)
+      at createDescriptor (file:///Users/benson/code/github/VastVideo-Go/web/node_modules/@vitejs/plugin-vue/dist/index.mjs:74:43)
+      at transformMain (file:///Users/benson/code/github/VastVideo-Go/web/node_modules/@vitejs/plugin-vue/dist/index.mjs:2319:34)
+      at TransformPluginContext.transform (file:///Users/benson/code/github/VastVideo-Go/web/node_modules/@vitejs/plugin-vue/dist/index.mjs:2869:16)
+      at PluginContainer.transform (file:///Users/benson/code/github/VastVideo-Go/web/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:49100:19)
+      at async loadAndTransform (file:///Users/benson/code/github/VastVideo-Go/web/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:51977:27)
+23:22:21 [vite] Internal server error: At least one <template> or <script> is required in a single file component. /Users/benson/code/github/VastVideo-Go/web/src/components/SearchResultsSidebar.vue
+  Plugin: vite:vue
+  File: /Users/benson/code/github/VastVideo-Go/web/src/components/SearchResultsSidebar.vue
+      at Object.parse$1 [as parse] (/Users/benson/code/github/VastVideo-Go/web/node_modules/@vue/compiler-sfc/dist/compiler-sfc.cjs.js:1864:7)
+      at createDescriptor (file:///Users/benson/code/github/VastVideo-Go/web/node_modules/@vitejs/plugin-vue/dist/index.mjs:74:43)
+      at transformMain (file:///Users/benson/code/github/VastVideo-Go/web/node_modules/@vitejs/plugin-vue/dist/index.mjs:2319:34)
+      at TransformPluginContext.transform (file:///Users/benson/code/github/VastVideo-Go/web/node_modules/@vitejs/plugin-vue/dist/index.mjs:2869:16)
+      at PluginContainer.transform (file:///Users/benson/code/github/VastVideo-Go/web/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:49100:19)
+      at async loadAndTransform (file:///Users/benson/code/github/VastVideo-Go/web/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:51977:27)
+23:29:44 [vite] hmr update /src/components/VideoDetailMobile_youtube.vue?vue&type=style&index=0&scoped=bf27580b&lang.css
+23:29:49 [vite] hmr update /src/components/VideoDetailMobile_youtube.vue
+23:29:56 [vite] hmr update /src/components/SearchResultsSidebar.vue?vue&type=style&index=0&scoped=2eded8e1&lang.css
+23:30:01 [vite] hmr update /src/components/VideoDetailMobile_youtube.vue
+23:30:07 [vite] hmr update /src/components/VideoDetailMobile_youtube.vue
+23:30:12 [vite] hmr update /src/components/SearchResultsSidebar.vue?vue&type=style&index=0&scoped=2eded8e1&lang.css
+23:30:17 [vite] hmr update /src/components/SearchResultsSidebar.vue?vue&type=style&index=0&scoped=2eded8e1&lang.css
+23:35:45 [vite] hmr update /src/components/SearchResultsSidebar.vue, /src/components/SearchResultsSidebar.vue?vue&type=style&index=0&scoped=2eded8e1&lang.css
