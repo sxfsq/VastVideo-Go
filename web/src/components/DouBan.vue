@@ -57,6 +57,10 @@
       <div class="no-results-text">暂无豆瓣推荐内容</div>
       <div class="no-results-sub">请稍后重试或切换分类</div>
     </div>
+
+    <div v-if="loading" class="loading-tip">
+      正在加载数据，请稍候...
+    </div>
   </div>
 </template>
 
@@ -353,12 +357,10 @@ export default defineComponent({
   margin-right: 0;
 }
 
-.video-cards-container {
+.douban-grid .video-cards-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 10px;
-  width: 100%;
-  box-sizing: border-box;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 20px;
 }
 
 /* 标签切换过渡效果 */
@@ -543,9 +545,8 @@ export default defineComponent({
 /* 响应式调整 */
 @media (max-width: 480px) {
   .video-cards-container {
-    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    grid-template-columns: 1fr 1fr !important;
     gap: 8px;
-    width: 100%;
   }
   
   .loading-card {
@@ -567,9 +568,8 @@ export default defineComponent({
 
 @media (max-width: 360px) {
   .video-cards-container {
-    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    grid-template-columns: 1fr 1fr !important;
     gap: 6px;
-    width: 100%;
   }
 }
 
@@ -601,5 +601,19 @@ export default defineComponent({
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 28px;
   }
+}
+
+@media (max-width: 600px) {
+  .douban-grid .video-cards-container {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px;
+  }
+}
+
+.loading-tip {
+  text-align: center;
+  color: #888;
+  font-size: 15px;
+  margin: 16px 0 0 0;
 }
 </style> 

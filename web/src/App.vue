@@ -36,6 +36,7 @@
       :video-data="currentVideo"
       @go-back="closeVideoDetail"
       @video-select="handleRelatedVideoSelect"
+      @search="handleSearch"
     />
     
     <!-- 关于对话框 -->
@@ -118,6 +119,7 @@ export default defineComponent({
       if (homePageRef.value) {
         homePageRef.value.performSearch(keyword)
         showSearchResults.value = true
+        showVideoDetail.value = false // 新增：搜索时关闭播放页
       }
     }
     
@@ -161,6 +163,16 @@ export default defineComponent({
       currentVideo.value = {}
       // 滚动到顶部
       window.scrollTo(0, 0)
+      // 新增：根据进入路径返回
+      if (showSearchResults.value) {
+        // 返回搜索结果页
+        // 不需要额外处理，HomePage 会自动显示搜索结果
+      } else {
+        // 返回豆瓣推荐页
+        if (homePageRef.value) {
+          homePageRef.value.backToRecommend()
+        }
+      }
     }
 
     const handleRelatedVideoSelect = (video) => {
@@ -303,11 +315,11 @@ body {
 
 .app {
   width: 100%;
-  min-height: 100vh;
+  /* min-height: 100vh; */
   background: #18192b;
   color: #fff;
   position: relative;
-  overflow-x: hidden;
+  /* overflow-x: hidden; */
   padding-top: 50px; /* 为HeaderMenu预留空间 */
   box-sizing: border-box;
 }
@@ -365,5 +377,11 @@ html {
     width: 100%;
     max-width: 100vw;
   }
+}
+
+html, body, #app, .app {
+  height: auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
 }
 </style> 

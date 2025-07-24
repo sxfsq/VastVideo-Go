@@ -7,7 +7,8 @@ import {
   getApiUrl, 
   getDoubanTagsUrl, 
   getDoubanSubjectsUrl,
-  getCurrentEnvConfig 
+  getCurrentEnvConfig,
+  getAllSourcesLatest
 } from '../config/api.js'
 
 // HTTP请求工具类
@@ -146,13 +147,18 @@ export class ApiService {
   }
 
   // 指定源搜索视频
-  static async searchVideosBySource(source, keyword, page = 1) {
+  static async searchVideosBySource(source, keyword, page = 1, latest = false) {
     const url = getApiUrl(API_ENDPOINTS.SOURCES.SEARCH)
-    const params = new URLSearchParams({
-      source: source,
-      keyword: keyword,
-      page: page.toString()
-    })
+    const params = new URLSearchParams({ source, page: page.toString() })
+    if (latest) {
+      params.append('latest', 'true')
+    } else {
+      // 只有不是 latest 时，keyword 必须有值
+      if (!keyword || !keyword.trim()) {
+        throw new Error('搜索关键字不能为空')
+      }
+      params.append('keyword', keyword)
+    }
     return httpClient.get(`${url}?${params.toString()}`)
   }
 
@@ -163,8 +169,8 @@ export class ApiService {
   }
 
   static async getLatestVideos() {
-    const url = getApiUrl(API_ENDPOINTS.SEARCH.LATEST)
-    return httpClient.get(url)
+    // 兼容旧调用，直接用新接口
+    return getAllSourcesLatest();
   }
 
   // 豆瓣相关API
@@ -214,7 +220,7 @@ export const api = {
   // 搜索
   search: {
     videos: (keyword) => ApiService.searchVideos(keyword),
-    videosBySource: (source, keyword, page) => ApiService.searchVideosBySource(source, keyword, page),
+    videosBySource: (source, keyword, page, latest) => ApiService.searchVideosBySource(source, keyword, page, latest),
     latest: () => ApiService.getLatestVideos()
   },
 

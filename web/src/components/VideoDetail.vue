@@ -1,30 +1,32 @@
 <template>
   <!-- 桌面端布局 -->
-  <VideoDetailDesktop_youtube 
+  <VideoDetailDesktop 
     v-if="isDesktop"
     :video-data="videoData"
     @video-select="handleVideoSelect"
+    @search="$emit('search', $event)"
   />
   
   <!-- 移动端布局 -->
-  <VideoDetailMobile_youtube 
+  <VideoDetailMobile 
     v-else
     :video-data="videoData"
     @go-back="goBack"
     @video-select="handleVideoSelect"
+    @search="$emit('search', $event)"
   />
 </template>
 
 <script>
 import { defineComponent, ref, onMounted, onUnmounted } from 'vue'
-import VideoDetailDesktop_youtube from './VideoDetailDesktop_youtube.vue'
-import VideoDetailMobile_youtube from './VideoDetailMobile_youtube.vue'
+import VideoDetailDesktop from './VideoDetailDesktop.vue'
+import VideoDetailMobile from './VideoDetailMobile.vue'
 
 export default defineComponent({
   name: 'VideoDetail',
   components: {
-    VideoDetailDesktop_youtube,
-    VideoDetailMobile_youtube
+    VideoDetailDesktop,
+    VideoDetailMobile
   },
   props: {
     videoData: {

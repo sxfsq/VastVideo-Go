@@ -18,69 +18,104 @@
       </div>
     </div>
 
-    <!-- 主要内容区域 -->
-    <div v-else class="video-detail-content">
+    <!-- 主要内容区域（受 showMainContent 控制） -->
+    <div v-else-if="showMainContent" class="video-detail-content">
+      <!-- 视频基础信息（标题、评分、标签） -->
+              <VideoMeta
+          :video-data="currentVideoData"
+          :has-search-results="hasSearchResults"
+          @show-description="showDescriptionFullscreen"
+        />
+
       <!-- 播放器组件 -->
-      <VideoPlayerMobile 
+      <VideoPlayer
         :video-data="currentVideoData"
+        :has-search-results="hasSearchResults"
+        :final-poster-url="finalPosterUrl"
+        :on-poster-error="onPosterError"
+        :on-poster-load="onPosterLoad"
+      />
+
+      <!-- 操作按钮 -->
+            <VideoActions
         :has-search-results="hasSearchResults"
       />
 
-      <!-- 视频信息组件 -->
-      <VideoInfoMobile 
-        :video-data="currentVideoData"
-        :has-search-results="hasSearchResults"
-      />
+      <!-- 剧情介绍 -->
+              <VideoDescription
+          :video-data="currentVideoData"
+          :is-fullscreen="isDescriptionFullscreen"
+          @close="closeDescriptionFullscreen"
+        />
 
       <!-- 剧集选择组件 -->
-      <EpisodesMobile 
+            <EpisodesList
         :video-data="currentVideoData"
         @episode-select="selectEpisode"
       />
 
       <!-- 演员信息组件 -->
-      <CastMobile 
+      <CastList 
         :video-data="currentVideoData"
         @actor-select="selectActor"
       />
     </div>
 
-    <!-- 搜索结果侧边栏 -->
-    <SearchResultsSidebar
+    <!-- 侧边栏唤出按钮 -->
+    <button
+      v-if="showSidebarButton && showMainContent"
+      class="sidebar-toggle-btn sidebar-toggle-btn-bottom"
+      @click="showSidebar = true"
+    >
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#6366f1"/><path d="M9 6l6 6-6 6" stroke="#fff" stroke-width="2" fill="none"/></svg>
+      <span>相关推荐</span>
+    </button>
+    <!-- 相关推荐全屏弹窗 -->
+    <RecommendationsMobile
+      :visible="showSidebar"
       :related-videos-loading="relatedVideosLoading"
+      :displayed-videos="displayedVideos"
+      :has-more-data="hasMoreData"
+      :get-video-title="getVideoTitle"
+      :get-video-thumbnail="getVideoThumbnail"
+      :get-video-year="getVideoYear"
+      :get-video-type="getVideoType"
+      :get-video-rating="getVideoRating"
+      :get-video-source="getVideoSource"
+      :is-current-video="isCurrentVideo"
       :search-stage="searchStage"
       :search-progress="searchProgress"
-      :available-sources="availableSources"
-      :displayed-videos="displayedVideos"
-      :all-videos-data="allVideosData"
-      :has-more-data="hasMoreData"
-      :is-loading-more="isLoadingMore"
-      :current-video-data="currentVideoData"
       @video-select="selectRelatedVideo"
-      @search-all-sources="searchWithAllSources"
       @load-more="loadMoreVideos"
-      @toggle-sidebar="handleSidebarToggle"
+      @image-error="onImageError"
+      @search-all-sources="searchWithAllSources"
+      @close="handleCloseRecommendations"
+      @search="handleSidebarSearch"
     />
   </div>
 </template>
 
 <script>
 import { defineComponent, ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
-import VideoPlayerMobile from './VideoPlayerMobile.vue'
-import VideoInfoMobile from './VideoInfoMobile.vue'
-import EpisodesMobile from './EpisodesMobile.vue'
-import CastMobile from './CastMobile.vue'
-import SearchResultsSidebar from './SearchResultsSidebar.vue'
+import VideoPlayer from './common/VideoPlayer.vue'
+import VideoMeta from './common/VideoMeta.vue'
+import VideoActions from './common/VideoActions.vue'
+import VideoDescription from './common/VideoDescription.vue'
+import EpisodesList from './common/EpisodesList.vue'
+import CastList from './common/CastList.vue'
+import RecommendationsMobile from './RecommendationsMobile.vue'
 import api from '@/services/api.js'
 
 export default defineComponent({
-  name: 'VideoDetailMobile_youtube',
+  name: 'VideoDetailMobile',
   components: {
-    VideoPlayerMobile,
-    VideoInfoMobile,
-    EpisodesMobile,
-    CastMobile,
-    SearchResultsSidebar
+    VideoPlayer,
+    VideoMeta,
+    VideoActions,
+    VideoDescription,
+    EpisodesList,
+    CastList,
+    RecommendationsMobile
   },
   props: {
     videoData: {
@@ -89,7 +124,7 @@ export default defineComponent({
       default: () => ({})
     }
   },
-  emits: ['go-back', 'video-select'],
+  emits: ['go-back', 'video-select', 'search'],
   setup(props, { emit }) {
     // 当前显示的视频数据（本地管理，立即响应点击）
     const currentVideoData = ref(props.videoData ? { ...props.videoData } : {})
@@ -97,6 +132,7 @@ export default defineComponent({
     // 控制信息显示状态
     const isShowingPlaceholder = ref(false)
     const hasSearchResults = ref(false)
+    const isDescriptionFullscreen = ref(false)
     const searchStage = ref('默认源')
     const searchProgress = ref({ current: 0, total: 0, completed: 0 })
     
@@ -116,12 +152,35 @@ export default defineComponent({
     
     // 侧边栏状态（仅用于日志记录）
     const isSidebarExpanded = ref(false)
+    const showSidebar = ref(false)
+    const showSidebarButton = computed(() => !showSidebar.value && hasSearchResults.value && displayedVideos.value.length > 0)
+    const showMainContent = ref(false)
+    // 移除 isFirstSidebarOpen 相关逻辑
 
     // 获取视频信息的辅助方法
     const getVideoTitle = (video) => {
       return video.title || video.vod_name || video.name || '未知标题'
     }
-
+    const getVideoThumbnail = (video) => {
+      const thumbnail = video.cover || video.vod_pic || video.pic || video.poster
+      if (thumbnail && thumbnail.trim() && !thumbnail.includes('placeholder.com')) {
+        return thumbnail
+      }
+      return null
+    }
+    const getVideoYear = (video) => {
+      return video.year || video.vod_year || ''
+    }
+    const getVideoType = (video) => {
+      return video.type || video.type_name || video.vod_type || '视频'
+    }
+    const getVideoRating = (video) => {
+      const rating = video.rate || video.vod_score || video.rating || video.score
+      if (rating && rating !== '0' && rating !== '0.0') {
+        return rating
+      }
+      return null
+    }
     const getVideoSource = (video) => {
       if (video.search_source) {
         // 优先从后端获取的源列表中查找
@@ -157,6 +216,29 @@ export default defineComponent({
         return sourceMap[video.search_source] || video.search_source
       }
       return video.source_name || video.source || '视频源'
+    }
+    const getVideoDirector = (video) => {
+      return video.vod_director || video.director || ''
+    }
+    const getVideoArea = (video) => {
+      return video.vod_area || video.area || ''
+    }
+    const getVideoActors = (video) => {
+      const actors = video.vod_actor || video.actor || video.actors || ''
+      if (!actors) return []
+      return actors.split(',').map(actor => actor.trim()).filter(actor => actor)
+    }
+    const onImageError = (event) => {
+      event.target.style.display = 'none'
+    }
+
+    // 全屏剧情介绍相关方法
+    const showDescriptionFullscreen = () => {
+      isDescriptionFullscreen.value = true
+    }
+
+    const closeDescriptionFullscreen = () => {
+      isDescriptionFullscreen.value = false
     }
 
     // 优化的视频切换函数
@@ -635,7 +717,7 @@ export default defineComponent({
         }
       } catch (error) {
         console.error('❌ 搜索相关视频失败:', error)
-        relatedVideos.value = []
+        // relatedVideos.value = [] // This line was removed from the original file, so it's removed here.
       } finally {
         relatedVideosLoading.value = false
         isShowingPlaceholder.value = false
@@ -656,9 +738,54 @@ export default defineComponent({
       console.log('选择演员:', actor)
     }
 
+    const hasSelectedRecommendation = ref(false)
+    // 监听showSidebar，弹窗打开时重置hasSelectedRecommendation
+    watch(showSidebar, (val) => {
+      if (val) {
+        hasSelectedRecommendation.value = false
+      }
+    })
+
+    // 监听showMainContent，控制主内容区域的显示
+    watch(showMainContent, (val) => {
+      if (val) {
+        // 当showMainContent变为true时，确保视频数据已加载
+        if (props.videoData && Object.keys(props.videoData).length > 0) {
+          currentVideoData.value = { ...props.videoData }
+          isShowingPlaceholder.value = false
+          hasSearchResults.value = false
+          console.log(`📺 主内容显示，同步视频数据: "${getVideoTitle(props.videoData)}"`)
+        } else {
+          console.log('⚠️ 主内容显示，但视频数据为空')
+          currentVideoData.value = {}
+          hasSearchResults.value = false
+        }
+      }
+    })
+
     const selectRelatedVideo = (video) => {
       console.log('选择相关视频:', video)
       switchToVideo(video)
+      hasSelectedRecommendation.value = true
+      showSidebar.value = false // 用户点击后关闭相关推荐
+      showMainContent.value = true // 用户点击后显示主内容
+    }
+
+    const handleCloseRecommendations = () => {
+      showSidebar.value = false
+      if (!hasSelectedRecommendation.value) {
+        // 回到豆瓣推荐页（无论当前currentVideoData是否已变）
+        if (props.videoData && Object.keys(props.videoData).length > 0) {
+          currentVideoData.value = { ...props.videoData }
+        }
+        showMainContent.value = false // 未选推荐时不显示主内容
+        // 新增：未选推荐时，通知父组件 goBack
+        emit('go-back')
+      }
+    }
+
+    const handleSidebarSearch = (keyword) => {
+      emit('search', keyword)
     }
 
     const handleSidebarToggle = (isExpanded) => {
@@ -699,6 +826,16 @@ export default defineComponent({
       }
     }, { immediate: false })
 
+    // 监听hasSearchResults和displayedVideos，自动弹出侧边栏（不再自动关闭）
+    watch([
+      () => hasSearchResults.value,
+      () => displayedVideos.value.length
+    ], ([hasResults, videoCount]) => {
+      if (hasResults && videoCount > 0) {
+        showSidebar.value = true
+      }
+    })
+
     onMounted(async () => {
       if (props.videoData && Object.keys(props.videoData).length > 0) {
         currentVideoData.value = { ...props.videoData }
@@ -716,6 +853,8 @@ export default defineComponent({
       if (props.videoData && Object.keys(props.videoData).length > 0 && selectedSources.value.length > 0) {
         await searchRelatedVideos()
       }
+      showSidebar.value = true // 进入页面立即显示相关推荐
+      showMainContent.value = false // 初始不显示主内容
     })
 
     onUnmounted(() => {
@@ -725,10 +864,51 @@ export default defineComponent({
       }
     })
 
+    const posterImageError = ref(false)
+    const getPosterUrl = (videoData) => {
+      const possibleUrls = [
+        videoData?.poster,
+        videoData?.vod_pic, 
+        videoData?.pic,
+        videoData?.cover
+      ]
+      for (const url of possibleUrls) {
+        if (url && typeof url === 'string' && url.trim() !== '' && !url.includes('placeholder.com')) {
+          return url.trim()
+        }
+      }
+      return null
+    }
+    const getDefaultPosterSvg = () => {
+      return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQwIiBoZWlnaHQ9IjIxMCIgdmlld0JveD0iMCAwIDE0MCAyMTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxNDAiIGhlaWdodD0iMjEwIiBmaWxsPSIjMjMyNDRhIi8+CjxyZWN0IHg9IjEwIiB5PSIxMCIgd2lkdGg9IjEyMCIgaGVpZ2h0PSIxNjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzNjM2M1YSIgc3Ryb2tlLXdpZHRoPSIxIi8+CjxwYXRoIGQ9Ik0zMCA2MGg4MHY0MEgzMHoiIGZpbGw9IiMzYzNjNWEiIGZpbGwtb3BhY2l0eT0iMC4zIi8+Cjx0ZXh0IHg9IjcwIiB5PSIxODAiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgZmlsbD0iI2I5YmJkNCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+6K+36L6T5YWl5Y2a5L2N5L2N5Y2aPC90ZXh0Pgo8L3N2Zz4K'
+    }
+    const finalPosterUrl = computed(() => {
+      if (posterImageError.value) {
+        return getDefaultPosterSvg()
+      }
+      const url = getPosterUrl(currentVideoData.value)
+      if (!url) {
+        return getDefaultPosterSvg()
+      }
+      return url
+    })
+    const onPosterError = () => { posterImageError.value = true }
+    const onPosterLoad = () => { posterImageError.value = false }
+
+    const isCurrentVideo = (video) => {
+      if (!currentVideoData.value) return false
+      const currentTitle = currentVideoData.value.title || currentVideoData.value.vod_name || ''
+      const videoTitle = video.title || video.vod_name || ''
+      const currentSource = currentVideoData.value.search_source || currentVideoData.value.source || ''
+      const videoSource = video.search_source || video.source || ''
+      return currentTitle === videoTitle && currentSource === videoSource
+    }
+
     return {
       currentVideoData,
       isShowingPlaceholder,
       hasSearchResults,
+      isDescriptionFullscreen,
       searchStage,
       searchProgress,
       currentPage,
@@ -745,10 +925,32 @@ export default defineComponent({
       selectEpisode,
       selectActor,
       selectRelatedVideo,
+      showDescriptionFullscreen,
+      closeDescriptionFullscreen,
       searchWithAllSources,
       loadMoreVideos,
       handleSidebarToggle,
-      isSidebarExpanded
+      isSidebarExpanded,
+      showSidebar,
+      showSidebarButton,
+      showMainContent,
+      finalPosterUrl,
+      onPosterError,
+      onPosterLoad,
+      isCurrentVideo,
+      getVideoTitle,
+      getVideoThumbnail,
+      getVideoYear,
+      getVideoType,
+      getVideoRating,
+      getVideoSource,
+      getVideoDirector,
+      getVideoArea,
+      getVideoActors,
+      onImageError,
+      hasSelectedRecommendation,
+      handleCloseRecommendations,
+      handleSidebarSearch
     }
   }
 })
@@ -837,5 +1039,77 @@ export default defineComponent({
 .video-detail-content {
   width: 100%;
   /* 移除右侧边距，让侧边栏完全悬浮 */
+  padding-bottom: 20px; /* 为底部留出空间 */
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+  .video-detail-content {
+    padding-bottom: 40px; /* 移动端底部留更多空间 */
+  }
+}
+
+.mobile-recommendations-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 90vw;
+  max-width: 420px;
+  height: 100vh;
+  z-index: 9999;
+  background: rgba(20, 20, 40, 0.98);
+  box-shadow: -4px 0 24px rgba(0,0,0,0.18);
+  border-top-left-radius: 16px;
+  border-bottom-left-radius: 16px;
+  overflow-y: auto;
+  transition: transform 0.3s cubic-bezier(.4,2,.6,1), opacity 0.2s;
+  will-change: transform, opacity;
+  padding-bottom: 32px;
+}
+@media (max-width: 480px) {
+  .mobile-recommendations-sidebar {
+    width: 100vw;
+    max-width: 100vw;
+    border-radius: 0;
+    padding-bottom: 60px;
+  }
+}
+
+.sidebar-toggle-btn {
+  position: fixed;
+  z-index: 10001;
+  background: rgba(99,102,241,0.95);
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+  padding: 10px 18px 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.sidebar-toggle-btn-bottom {
+  bottom: 18px;
+  right: 18px;
+}
+.sidebar-toggle-btn:hover {
+  background: #7c3aed;
+}
+.sidebar-toggle-btn svg {
+  flex-shrink: 0;
+}
+@media (max-width: 480px) {
+  .sidebar-toggle-btn {
+    font-size: 13px;
+    padding: 8px 14px 8px 10px;
+  }
+  .sidebar-toggle-btn-bottom {
+    bottom: 10px;
+    right: 10px;
+  }
 }
 </style>

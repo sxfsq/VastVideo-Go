@@ -4,7 +4,7 @@
 // 基础配置
 export const API_CONFIG = {
   // 基础地址 - 根据环境自动切换
-  BASE_URL: import.meta.env.DEV ? 'http://192.168.10.88:8228' : '',
+  BASE_URL: import.meta.env.DEV ? 'http://127.0.0.1:8228' : '',
   
   // 请求超时时间
   TIMEOUT: 10000,
@@ -73,7 +73,7 @@ export const getDoubanSubjectsUrl = (params) => {
 export const ENV_CONFIG = {
   // 开发环境
   development: {
-    BASE_URL: 'http://192.168.10.88:8228',
+    BASE_URL: 'http://127.0.0.1:8228',
     LOG_LEVEL: 'debug'
   },
   
@@ -88,4 +88,50 @@ export const ENV_CONFIG = {
 export const getCurrentEnvConfig = () => {
   const env = import.meta.env.MODE || 'development'
   return ENV_CONFIG[env] || ENV_CONFIG.development
+} 
+
+// 获取所有视频源
+export function getAllSources() {
+  return fetch('/api/sources').then(res => res.json());
+}
+
+// 获取某个源的最新推荐
+export function getSourceLatest(sourceCode) {
+  return fetch(`/api/source_search?source=${encodeURIComponent(sourceCode)}&latest=true`)
+    .then(res => res.json());
+}
+
+// 某个源关键词搜索
+export function searchSourceVideos(sourceCode, keyword, page = 1) {
+  return fetch(`/api/source_search?source=${encodeURIComponent(sourceCode)}&keyword=${encodeURIComponent(keyword)}&page=${page}`)
+    .then(res => res.json());
+}
+
+// 并发获取所有源的最新推荐，合并结果（部分失败不影响）
+export async function getAllSourcesLatest() {
+  const sourcesRes = await getAllSources();
+  if (!sourcesRes.success) return [];
+  const sources = sourcesRes.data;
+  const allResults = await Promise.allSettled(
+    sources.map(src => getSourceLatest(src.code).then(res => res.data || []))
+  );
+  // 只取fulfilled的结果
+  return allResults
+    .filter(r => r.status === 'fulfilled')
+    .map(r => r.value)
+    .flat();
+}
+
+// 并发所有源关键词搜索，合并结果（部分失败不影响）
+export async function getAllSourcesSearch(keyword, page = 1) {
+  const sourcesRes = await getAllSources();
+  if (!sourcesRes.success) return [];
+  const sources = sourcesRes.data;
+  const allResults = await Promise.allSettled(
+    sources.map(src => searchSourceVideos(src.code, keyword, page).then(res => res.data || []))
+  );
+  return allResults
+    .filter(r => r.status === 'fulfilled')
+    .map(r => r.value)
+    .flat();
 } 

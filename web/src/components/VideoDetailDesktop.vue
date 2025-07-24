@@ -1,8 +1,5 @@
 <template>
   <div class="video-detail-desktop">
-
-
-    <!-- 空状态显示 -->
     <div v-if="!videoData || Object.keys(videoData).length === 0" class="empty-state">
       <div class="empty-state-content">
         <div class="loading-spinner"></div>
@@ -10,182 +7,41 @@
         <div class="empty-state-desc">请稍候，正在获取视频详细信息</div>
       </div>
     </div>
-
-    <!-- YouTube风格布局：左侧主内容 + 右侧推荐 -->
     <div v-else class="youtube-layout">
-      <!-- 左侧主内容区 -->
       <div class="main-content">
-        <!-- 主要内容区域 -->
         <div class="primary-content">
-        <!-- 播放器 -->
-        <div class="player-section">
-          <div class="video-player-container">
-            <!-- 有搜索结果时显示播放器 -->
-            <div v-if="hasSearchResults" class="video-player-placeholder">
-              <div class="play-icon">▶</div>
-              <div class="player-text">点击播放</div>
-            </div>
-            
-            <!-- 显示海报图片（默认状态或无搜索结果时） -->
-            <div v-else class="video-poster-container">
-              <img 
-                :src="finalPosterUrl"
-                :alt="videoData?.title || videoData?.vod_name || '视频海报'"
-                class="poster-image"
-                loading="lazy"
-                referrerpolicy="no-referrer"
-                @error="onPosterError"
-                @load="onPosterLoad"
-              />
-            </div>
+          <!-- 播放器区域保留原有实现 -->
+          <div class="player-section">
+            <VideoPlayer
+              :video-data="currentVideoData"
+              :has-search-results="hasSearchResults"
+              :final-poster-url="finalPosterUrl"
+              :on-poster-error="onPosterError"
+              :on-poster-load="onPosterLoad"
+            />
           </div>
-        </div>
+          <!-- 通用基础信息组件 -->
+          <VideoMeta 
+            :video-data="currentVideoData" 
+            :has-search-results="hasSearchResults"
+            @show-description="showDescriptionFullscreen"
+          />
+          <!-- 通用操作按钮组件 -->
+          <VideoActions :has-search-results="hasSearchResults" />
+          <!-- 通用剧情介绍组件 -->
+          <VideoDescription 
+            :video-data="currentVideoData" 
+            :is-fullscreen="isDescriptionFullscreen"
+            @close="closeDescriptionFullscreen"
+          />
+          <!-- 通用剧集选择组件 -->
+          <EpisodesList :video-data="currentVideoData" @episode-select="selectEpisode" />
+          <!-- 通用演员列表组件 -->
+          <CastList :video-data="currentVideoData" @actor-select="handleActorSelect" />
 
-        <!-- 视频信息 -->
-          <div class="video-info" :class="{ 'placeholder-blur': isShowingPlaceholder }">
-            <div class="video-title">{{ currentVideoData?.title || currentVideoData?.vod_name || '加载中...' }}</div>
-          <div class="video-meta-bar">
-            <div class="video-meta-left">
-                <span v-if="currentVideoData?.type_name" class="meta-tag">{{ currentVideoData.type_name }}</span>
-                <span v-if="currentVideoData?.year || currentVideoData?.vod_year" class="meta-tag">{{ currentVideoData.year || currentVideoData.vod_year }}</span>
-                <span v-if="currentVideoData?.rate || currentVideoData?.vod_score" class="meta-tag rating">{{ currentVideoData.rate || currentVideoData.vod_score }}分</span>
-                <span class="meta-tag source">{{ hasSearchResults ? getVideoSource(currentVideoData) : '豆瓣推荐' }}</span>
-            </div>
-            <div class="video-actions">
-              <button 
-                class="action-btn primary" 
-                :disabled="!hasSearchResults"
-                :title="!hasSearchResults ? '暂无播放源，请等待搜索结果' : '开始播放'"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
-                播放
-              </button>
-              <button 
-                class="action-btn" 
-                :disabled="!hasSearchResults"
-                :title="!hasSearchResults ? '暂无播放源，无法收藏' : '添加到收藏'"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7z"/>
-                </svg>
-                收藏
-              </button>
-              <button 
-                class="action-btn" 
-                :disabled="!hasSearchResults"
-                :title="!hasSearchResults ? '暂无播放源，无法分享' : '分享给朋友'"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
-                  <polyline points="16,6 12,2 8,6"/>
-                  <line x1="12" y1="2" x2="12" y2="15"/>
-                </svg>
-                分享
-              </button>
-            </div>
-            
-
-          </div>
-        </div>
-
-          <!-- 描述信息（仅在有搜索结果时显示） -->
-          <div v-if="hasSearchResults" class="video-description" :class="{ 'placeholder-blur': isShowingPlaceholder }">
-          <div class="description-content" :class="{ expanded: showFullDescription }">
-              <p>{{ currentVideoData?.description || currentVideoData?.vod_content || '这是一部优秀的影视作品，讲述了一个引人入胜的故事，具有深刻的内涵和精彩的表演，值得观看和品味。剧情跌宕起伏，人物刻画深入，是一部值得细细品味的优秀作品。' }}</p>
-          </div>
-          <button v-if="!showFullDescription" class="show-more-btn" @click="toggleDescription">
-            显示更多
-          </button>
-          <button v-else class="show-more-btn" @click="toggleDescription">
-            显示更少
-          </button>
-        </div>
-
-        <!-- 剧集选择 -->
-          <div v-if="episodesList.length > 0" class="episodes-section">
-          <div class="episodes-header">
-            <h3 class="section-title">选集播放</h3>
-              <span class="episodes-count">共{{ episodesList.length }}集</span>
-          </div>
-          <div class="episodes-container">
-            <div class="episodes-grid">
-                <div 
-                  v-for="(episode, index) in episodesList" 
-                  :key="index" 
-                  class="episode-item" 
-                  :class="{ active: index === 0 }" 
-                  @click="selectEpisode(episode)"
-                >
-                  {{ episode.name }}
-              </div>
-            </div>
-          </div>
-        </div>
-
-          <!-- 单集影片信息 -->
-          <div v-else-if="currentVideoData.vod_play_url" class="episodes-section">
-            <div class="episodes-header">
-              <h3 class="section-title">播放信息</h3>
-              <span class="episodes-count">{{ currentVideoData.vod_remarks || 'HD' }}</span>
-            </div>
-            <div class="single-episode-info">
-              <div class="episode-quality">{{ currentVideoData.vod_remarks || 'HD' }}</div>
-              <div class="episode-size">{{ getVideoSize() }}</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 演员信息（独立区域，仅在有搜索结果时显示） -->
-        <div v-if="hasSearchResults && actorsList.length > 0" class="cast-section" :class="{ 'placeholder-blur': isShowingPlaceholder }">
-          <h3 class="section-title">主要演员</h3>
-          <div class="cast-container">
-            <div class="cast-grid">
-              <div v-for="(actor, index) in actorsList" :key="index" class="cast-item">
-                <div class="cast-avatar">{{ actor.charAt(0) }}</div>
-                <div class="cast-info">
-                  <div class="cast-name">{{ actor }}</div>
-                  <div class="cast-role">演员</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- 影片信息（仅在有搜索结果时显示） -->
-        <div v-if="hasSearchResults" class="movie-info-section" :class="{ 'placeholder-blur': isShowingPlaceholder }">
-          <h3 class="section-title">影片信息</h3>
-          <div class="movie-info-grid">
-            <div class="info-item">
-              <span class="info-label">导演:</span>
-              <span class="info-value">{{ currentVideoData?.vod_director || '未知' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">地区:</span>
-              <span class="info-value">{{ currentVideoData?.vod_area || '未知' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">语言:</span>
-              <span class="info-value">{{ currentVideoData?.vod_lang || '未知' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">年份:</span>
-              <span class="info-value">{{ currentVideoData?.vod_year || currentVideoData?.year || '未知' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">类型:</span>
-              <span class="info-value">{{ currentVideoData?.type_name || '未知' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">评分:</span>
-              <span class="info-value">{{ currentVideoData?.vod_score || currentVideoData?.rate || '暂无' }}分</span>
-            </div>
-          </div>
         </div>
       </div>
-
-      <!-- 右侧推荐列表 -->
+      <!-- 右侧推荐列表等内容保留原有实现 -->
       <div class="recommendations">
         <!-- 推荐列表标题和操作按钮 -->
         <div class="recommendations-header">
@@ -202,9 +58,7 @@
             </button>
           </div>
         </div>
-        
         <div class="recommendations-list">
-          
           <!-- 加载状态 -->
           <template v-if="relatedVideosLoading">
             <div class="loading-container">
@@ -229,7 +83,6 @@
               </div>
             </div>
           </template>
-          
           <!-- 相关视频列表 -->
           <template v-else-if="displayedVideos.length > 0">
             <div 
@@ -238,7 +91,7 @@
               :class="['recommendation-item', { 'current-video': isCurrentVideo(video) }]" 
               @click="selectRelatedVideo(video)"
             >
-            <div class="recommendation-thumbnail">
+              <div class="recommendation-thumbnail">
                 <img 
                   v-if="getVideoThumbnail(video)" 
                   :src="getVideoThumbnail(video)" 
@@ -249,56 +102,53 @@
                 <div v-else class="thumbnail-placeholder">
                   <div class="placeholder-icon">🎬</div>
                 </div>
-              <div class="thumbnail-overlay">
-                <div class="play-btn">▶</div>
-              </div>
+                <div class="thumbnail-overlay">
+                  <div class="play-btn">▶</div>
+                </div>
                 <div class="video-source-badge">{{ getVideoSource(video) }}</div>
-            </div>
-            <div class="recommendation-info">
-              <div class="recommendation-title">{{ getVideoTitle(video) }}</div>
-              
-              <!-- 视频基本信息 -->
-              <div class="video-basic-info">
-                <div class="info-row">
-                  <span class="info-label">类型:</span>
-                  <span class="info-value">{{ getVideoType(video) }}</span>
+              </div>
+              <div class="recommendation-info">
+                <div class="recommendation-title">{{ getVideoTitle(video) }}</div>
+                <!-- 视频基本信息 -->
+                <div class="video-basic-info">
+                  <div class="info-row">
+                    <span class="info-label">类型:</span>
+                    <span class="info-value">{{ getVideoType(video) }}</span>
+                  </div>
+                  <div v-if="getVideoYear(video)" class="info-row">
+                    <span class="info-label">年份:</span>
+                    <span class="info-value">{{ getVideoYear(video) }}</span>
+                  </div>
+                  <div v-if="getVideoRating(video)" class="info-row">
+                    <span class="info-label">评分:</span>
+                    <span class="info-value rating-value">★ {{ getVideoRating(video) }}分</span>
+                  </div>
+                  <div v-if="getVideoDirector(video)" class="info-row">
+                    <span class="info-label">导演:</span>
+                    <span class="info-value">{{ getVideoDirector(video) }}</span>
+                  </div>
+                  <div v-if="getVideoArea(video)" class="info-row">
+                    <span class="info-label">地区:</span>
+                    <span class="info-value">{{ getVideoArea(video) }}</span>
+                  </div>
                 </div>
-                <div v-if="getVideoYear(video)" class="info-row">
-                  <span class="info-label">年份:</span>
-                  <span class="info-value">{{ getVideoYear(video) }}</span>
-                </div>
-                <div v-if="getVideoRating(video)" class="info-row">
-                  <span class="info-label">评分:</span>
-                  <span class="info-value rating-value">★ {{ getVideoRating(video) }}分</span>
-                </div>
-                <div v-if="getVideoDirector(video)" class="info-row">
-                  <span class="info-label">导演:</span>
-                  <span class="info-value">{{ getVideoDirector(video) }}</span>
-                </div>
-                <div v-if="getVideoArea(video)" class="info-row">
-                  <span class="info-label">地区:</span>
-                  <span class="info-value">{{ getVideoArea(video) }}</span>
+                <!-- 演员信息（如果有） -->
+                <div v-if="getVideoActors(video).length > 0" class="actors-info">
+                  <div class="info-label">演员:</div>
+                  <div class="actors-list">
+                    {{ getVideoActors(video).slice(0, 3).join('、') }}
+                    <span v-if="getVideoActors(video).length > 3" class="more-actors">等{{ getVideoActors(video).length }}人</span>
+                  </div>
                 </div>
               </div>
-              
-              <!-- 演员信息（如果有） -->
-              <div v-if="getVideoActors(video).length > 0" class="actors-info">
-                <div class="info-label">演员:</div>
-                <div class="actors-list">
-                  {{ getVideoActors(video).slice(0, 3).join('、') }}
-                  <span v-if="getVideoActors(video).length > 3" class="more-actors">等{{ getVideoActors(video).length }}人</span>
-                </div>
-              </div>
             </div>
-        </div>
           </template>
-          
           <!-- 加载更多状态 -->
           <div v-if="displayedVideos.length > 0 && hasMoreData" class="load-more-container">
             <div v-if="isLoadingMore" class="loading-more">
               <div class="loading-spinner-small"></div>
               <span>加载更多...</span>
-      </div>
+            </div>
             <button 
               v-else 
               class="load-more-btn" 
@@ -307,12 +157,10 @@
               查看更多 (还有 {{ allVideosData.length - displayedVideos.length }} 个视频)
             </button>
           </div>
-          
           <!-- 数据统计信息 -->
           <div v-if="allVideosData.length > 0" class="videos-stats">
             已显示 {{ displayedVideos.length }} / {{ allVideosData.length }} 个相关视频
           </div>
-          
           <!-- 无结果状态 -->
           <template v-else-if="!relatedVideosLoading">
             <div class="no-results">
@@ -328,10 +176,26 @@
 
 <script>
 import { defineComponent, ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
+import VideoMeta from './common/VideoMeta.vue'
+import VideoActions from './common/VideoActions.vue'
+import VideoDescription from './common/VideoDescription.vue'
+import CastList from './common/CastList.vue'
+import EpisodesList from './common/EpisodesList.vue'
+import VideoPlayer from './common/VideoPlayer.vue'
 import { api } from '@/services/api.js'
+import Recommendations from './common/Recommendations.vue'
 
 export default defineComponent({
-  name: 'VideoDetailDesktop_youtube',
+  name: 'VideoDetailDesktop',
+  components: {
+    VideoMeta,
+    VideoActions,
+    VideoDescription,
+    CastList,
+    EpisodesList,
+    VideoPlayer,
+    Recommendations
+  },
   props: {
     videoData: {
       type: Object,
@@ -339,9 +203,10 @@ export default defineComponent({
       default: () => ({})
     }
   },
-  emits: ['video-select'],
+  emits: ['video-select', 'search'],
   setup(props, { emit }) {
     const showFullDescription = ref(false)
+    const isDescriptionFullscreen = ref(false)
     const relatedVideos = ref([])
     const relatedVideosLoading = ref(false)
     const availableSources = ref([])
@@ -408,6 +273,14 @@ export default defineComponent({
     
 
     
+    const showDescriptionFullscreen = () => {
+      isDescriptionFullscreen.value = true
+    }
+
+    const closeDescriptionFullscreen = () => {
+      isDescriptionFullscreen.value = false
+    }
+
     const toggleDescription = () => {
       showFullDescription.value = !showFullDescription.value
       // 描述展开后重新调整推荐列表高度
@@ -420,6 +293,11 @@ export default defineComponent({
       console.log('选择剧集:', episode)
       // 这里可以添加切换剧集的逻辑
       // 例如：更新播放URL、标记当前选中集等
+    }
+
+    const handleActorSelect = (actor) => {
+      console.log('选择演员:', actor)
+      // 这里可以添加演员选择的逻辑，比如搜索该演员的其他作品
     }
 
     const selectRelatedVideo = (video) => {
@@ -1470,6 +1348,11 @@ export default defineComponent({
       }
     })
 
+    // 侧边栏搜索事件处理
+    const handleSidebarSearch = (keyword) => {
+      emit('search', keyword)
+    }
+
     return {
       // Props 暴露
       videoData: computed(() => props.videoData),
@@ -1499,9 +1382,13 @@ export default defineComponent({
       actorsList,
       episodesList,
       currentVideoIndex,
+      isDescriptionFullscreen,
       // 方法
+      showDescriptionFullscreen,
+      closeDescriptionFullscreen,
       toggleDescription,
       selectEpisode,
+      handleActorSelect,
       selectRelatedVideo,
       switchToVideo,
       executeScrollSequence,
@@ -1538,7 +1425,8 @@ export default defineComponent({
       onPosterLoad,
       getPosterUrl,
       getDefaultPosterSvg,
-      toggleDescription
+      toggleDescription,
+      handleSidebarSearch
     }
   }
 })
@@ -2012,38 +1900,7 @@ export default defineComponent({
   white-space: nowrap;
 }
 
-/* 影片信息 */
-.movie-info-section {
-  background: #23244a;
-  padding: 20px;
-  border-radius: 12px;
-  margin-top: 16px;
-}
 
-.movie-info-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.info-item {
-  display: flex;
-  gap: 8px;
-}
-
-.info-label {
-  font-size: 14px;
-  color: #a5a5a5;
-  min-width: 50px;
-  flex-shrink: 0;
-}
-
-.info-value {
-  font-size: 14px;
-  color: #ffffff;
-  flex: 1;
-}
 
 /* 单集信息 */
 .single-episode-info {

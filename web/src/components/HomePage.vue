@@ -21,22 +21,18 @@
     >
       <header class="search-header">
         <h2 class="section-title">{{ searchResultTitle }}</h2>
-        <button class="back-to-recommend-btn" @click="backToRecommend">
-          返回推荐
-        </button>
       </header>
       <div class="video-grid">
         <VideoCard 
-          v-for="video in filteredSearchResults" 
+          v-for="video in displayedVideos" 
           :key="video.id || video.vod_id"
           :video="video"
           :source="'搜索结果'"
           @click="onVideoClick"
         />
-        <div v-if="searchLoading" class="loading-card">
-          <div class="loading-spinner"></div>
-          <div class="loading-text">搜索中...</div>
-        </div>
+      </div>
+      <div v-if="searchLoading || isLoadingMore" class="loading-tip">
+        正在加载数据，请稍候...
       </div>
       <div v-if="!searchLoading && searchResults.length === 0 && hasSearched" class="no-results">
         <div class="no-results-icon">🔍</div>
@@ -88,6 +84,13 @@ export default defineComponent({
     const hasSearched = ref(false)
     let searchController = null
     
+    // 分页与无限加载相关状态
+    const currentPage = ref(1)
+    const videosPerPage = 20 // 每页显示20个
+    const isLoadingMore = ref(false)
+    const hasMoreData = computed(() => searchResults.value.length > currentPage.value * videosPerPage)
+    const displayedVideos = computed(() => filteredSearchResults.value.slice(0, currentPage.value * videosPerPage))
+
     // 计算属性
     const filteredSearchResults = computed(() => {
       return filterVideoContent(searchResults.value)
@@ -109,20 +112,20 @@ export default defineComponent({
     
     const performSearch = async (keyword) => {
       console.log('执行搜索:', keyword)
-      
       // 取消之前的搜索
       if (searchController) {
         searchController.abort()
       }
-      
+      // 清空结果并置顶
+      searchResults.value = []
+      currentPage.value = 1
+      window.scrollTo({ top: 0, behavior: 'auto' })
       searchController = new AbortController()
       searchLoading.value = true
       hasSearched.value = true
       showSearchResults.value = true
-      
       if (!keyword.trim()) {
-        searchResultTitle.value = '最新推荐'
-        // 空搜索，获取最新视频
+        searchResultTitle.value = '源的最新推荐'
         await searchLatestVideos()
       } else {
         searchResultTitle.value = `搜索结果: ${keyword}`
@@ -131,42 +134,83 @@ export default defineComponent({
     }
     
     const searchVideos = async (keyword) => {
+      // 先清空结果
+      searchResults.value = []
       try {
-        const data = await api.search.videos(keyword)
-        if (data.success) {
-          searchResults.value = data.data || []
-          console.log(`搜索完成: 找到${searchResults.value.length}个结果`)
-        } else {
-          throw new Error(data.message || '搜索失败')
+        // 获取所有源
+        const sourcesRes = await api.sources.list()
+        if (!sourcesRes.success) throw new Error('获取源列表失败')
+        const sources = sourcesRes.data
+        if (!Array.isArray(sources) || sources.length === 0) throw new Error('无可用源')
+        // 记录还在加载的源数量
+        let pendingCount = sources.length
+        // 标记已返回的视频，避免重复
+        const seen = new Set()
+        for (const src of sources) {
+          api.search.videosBySource(src.code, keyword, 1).then(res => {
+            if (res.success && Array.isArray(res.data)) {
+              // 去重后 push
+              res.data.forEach(video => {
+                const uniqueKey = (video.id || video.vod_id || video.title || video.vod_name || Math.random()) + '_' + (src.code)
+                if (!seen.has(uniqueKey)) {
+                  seen.add(uniqueKey)
+                  searchResults.value.push({ ...video, search_source: src.code })
+                }
+              })
+            }
+          }).catch(err => {
+            // 某个源失败，忽略
+          }).finally(() => {
+            pendingCount--
+            if (pendingCount === 0) {
+              searchLoading.value = false
+              console.log('所有源已返回')
+            }
+          })
         }
       } catch (error) {
-        if (error.name !== 'AbortError') {
-          console.error('搜索失败:', error)
-          showToast('搜索失败', 'error', 2000)
-          searchResults.value = []
-        }
-      } finally {
         searchLoading.value = false
+        showToast(error.message || '搜索失败', 'error', 2000)
+        searchResults.value = []
       }
     }
     
     const searchLatestVideos = async () => {
+      searchResults.value = []
       try {
-        const data = await api.search.latest()
-        if (data.success) {
-          searchResults.value = data.data || []
-          console.log(`获取最新视频完成: 找到${searchResults.value.length}个结果`)
-        } else {
-          throw new Error(data.message || '获取最新视频失败')
+        const sourcesRes = await api.sources.list()
+        console.log('sourcesRes:', sourcesRes)
+        if (!sourcesRes.success) throw new Error('获取源列表失败')
+        const sources = sourcesRes.data
+        console.log('sources:', sources)
+        if (!Array.isArray(sources) || sources.length === 0) throw new Error('无可用源')
+        let pendingCount = sources.length
+        const seen = new Set()
+        for (const src of sources) {
+          api.search.videosBySource(src.code, undefined, 1, true).then(res => {
+            if (res.success && Array.isArray(res.data)) {
+              res.data.forEach(video => {
+                const uniqueKey = (video.id || video.vod_id || video.title || video.vod_name || Math.random()) + '_' + (src.code)
+                if (!seen.has(uniqueKey)) {
+                  seen.add(uniqueKey)
+                  searchResults.value.push({ ...video, search_source: src.code })
+                }
+              })
+            }
+          }).catch((err) => {
+            console.error('source_search error:', src.code, err)
+          }).finally(() => {
+            pendingCount--
+            if (pendingCount === 0) {
+              searchLoading.value = false
+            }
+          })
         }
       } catch (error) {
-        if (error.name !== 'AbortError') {
-          console.error('获取最新视频失败:', error)
-          showToast('获取最新视频失败', 'error', 2000)
-          searchResults.value = []
-        }
-      } finally {
+        console.error('searchLatestVideos error:', error)
         searchLoading.value = false
+        showToast(error.message || '获取最新视频失败', 'error', 2000)
+        searchResults.value = []
       }
     }
     
@@ -191,6 +235,48 @@ export default defineComponent({
       const stored = localStorage.getItem('vastvideo_adult_filter')
       return stored ? JSON.parse(stored) : true
     }
+    
+    // 无限滚动处理
+    const handleScroll = () => {
+      if (isLoadingMore.value || !hasMoreData.value || searchLoading.value) return
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+      const windowHeight = window.innerHeight
+      const documentHeight = document.documentElement.scrollHeight
+      const threshold = 200
+      if (scrollTop + windowHeight >= documentHeight - threshold) {
+        isLoadingMore.value = true
+        setTimeout(() => {
+          currentPage.value += 1
+          isLoadingMore.value = false
+        }, 300)
+      }
+    }
+    let scrollListenerActive = false
+    const enableScrollListener = () => {
+      if (!scrollListenerActive) {
+        window.addEventListener('scroll', handleScroll)
+        scrollListenerActive = true
+      }
+    }
+    const disableScrollListener = () => {
+      if (scrollListenerActive) {
+        window.removeEventListener('scroll', handleScroll)
+        scrollListenerActive = false
+      }
+    }
+    // 监听搜索结果区显示，自动启用/关闭滚动监听
+    watch(showSearchResults, (val) => {
+      if (val) {
+        enableScrollListener()
+      } else {
+        disableScrollListener()
+        currentPage.value = 1
+      }
+    })
+    // 搜索/最新推荐后重置分页
+    watch([searchResults, searchLoading], () => {
+      currentPage.value = 1
+    })
     
     // 监听标签变化
     watch(() => props.currentTag, (newTag, oldTag) => {
@@ -227,6 +313,11 @@ export default defineComponent({
       searchResultTitle,
       hasSearched,
       filteredSearchResults,
+      currentPage,
+      videosPerPage,
+      isLoadingMore,
+      hasMoreData,
+      displayedVideos,
       
       // 方法
       performSearch,
@@ -246,11 +337,9 @@ export default defineComponent({
   margin-top: -2px;
   padding: 8px;
   padding-top: 8px;
-  min-height: calc(100vh - 60px);
   z-index: 0 !important;
   width: 100%;
   box-sizing: border-box;
-  overflow-x: hidden;
 }
 
 .recommend-section, .search-results-section {
@@ -293,8 +382,8 @@ export default defineComponent({
 /* 搜索结果视频网格 */
 .video-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 20px;
   margin-bottom: 20px;
   width: 100%;
   box-sizing: border-box;
@@ -401,9 +490,16 @@ export default defineComponent({
 }
 
 /* 响应式调整 */
+@media (max-width: 600px) {
+  .video-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px;
+  }
+}
+
 @media (max-width: 480px) {
   .video-grid {
-    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    grid-template-columns: 1fr 1fr !important;
     gap: 8px;
     width: 100%;
   }
@@ -431,13 +527,8 @@ export default defineComponent({
 }
 
 @media (max-width: 360px) {
-  .main-content {
-    padding: 4px;
-    width: 100%;
-  }
-  
   .video-grid {
-    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    grid-template-columns: 1fr 1fr !important;
     gap: 6px;
     width: 100%;
   }
@@ -482,5 +573,12 @@ export default defineComponent({
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 28px;
   }
+}
+
+.loading-tip {
+  text-align: center;
+  color: #888;
+  font-size: 15px;
+  margin: 16px 0 0 0;
 }
 </style> 

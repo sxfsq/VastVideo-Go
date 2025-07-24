@@ -190,7 +190,13 @@ func (sc *SourcesConfig) HandleSourceSearchAPI(w http.ResponseWriter, r *http.Re
 
 	// 只允许GET请求
 	if r.Method != "GET" {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": "Method not allowed",
+			"data":    []VideoItem{},
+		})
 		return
 	}
 
@@ -201,20 +207,38 @@ func (sc *SourcesConfig) HandleSourceSearchAPI(w http.ResponseWriter, r *http.Re
 	isLatest := r.URL.Query().Get("latest") == "true"
 
 	if sourceCode == "" {
-		http.Error(w, "Missing source parameter", http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": "Missing source parameter",
+			"data":    []VideoItem{},
+		})
 		return
 	}
 
 	// 如果不是获取最新推荐，则keyword是必需的
 	if !isLatest && keyword == "" {
-		http.Error(w, "Missing keyword parameter", http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": "Missing keyword parameter",
+			"data":    []VideoItem{},
+		})
 		return
 	}
 
 	// 获取指定的视频源
 	source := sc.GetSourceByCode(sourceCode)
 	if source == nil {
-		http.Error(w, "Source not found", http.StatusNotFound)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": "Source not found",
+			"data":    []VideoItem{},
+		})
 		return
 	}
 
@@ -222,7 +246,13 @@ func (sc *SourcesConfig) HandleSourceSearchAPI(w http.ResponseWriter, r *http.Re
 	results, err := sc.searchSource(source, keyword, page)
 	if err != nil {
 		log.Printf("❌ 搜索失败: %v [IP:%s]", err, utils.GetRequestIP(r))
-		http.Error(w, "Search failed", http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": "Search failed: " + err.Error(),
+			"data":    []VideoItem{},
+		})
 		return
 	}
 

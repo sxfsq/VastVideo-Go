@@ -1,642 +1,326 @@
 <template>
-  <div class="recommendations-mobile">
-    <div class="recommendations-section">
-      <div class="section-header">
-        <h3 class="section-title">相关推荐</h3>
-        <div class="search-actions">
-          <button 
-            v-if="!relatedVideosLoading && availableSources.length > 0"
-            class="search-all-sources-btn"
-            @click="searchWithAllSources"
-            :disabled="relatedVideosLoading"
-          >
-            <span class="btn-icon">🔍</span>
-            全部源搜索
-          </button>
-        </div>
+  <div v-if="visible" class="mobile-recommendations-sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-title">相关推荐</span>
+      <button class="sidebar-searchall-btn" :disabled="relatedVideosLoading" @click="$emit('search-all-sources')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#fff" stroke-width="2"/><path d="M16 16l-3-3" stroke="#fff" stroke-width="2"/><circle cx="11" cy="11" r="4" stroke="#fff" stroke-width="2"/></svg>
+        <span>全部源搜索</span>
+      </button>
+      <button class="sidebar-close-btn" @click="$emit('close')">
+        <svg width="24" height="24" viewBox="0 0 24 24"><path d="M6 6l12 12M6 18L18 6" stroke="#fff" stroke-width="2"/></svg>
+      </button>
+    </div>
+    <!-- 搜索进度提示 -->
+    <div v-if="relatedVideosLoading" class="search-progress-tip">
+      <div class="search-progress-animated">
+        <span class="dot dot1"></span>
+        <span class="dot dot2"></span>
+        <span class="dot dot3"></span>
       </div>
-      
+      <span class="search-progress-main">
+        正在为你智能聚合搜索相关视频…
+        <span class="search-progress-count">({{ searchProgress.completed }}/{{ searchProgress.total }})</span>
+      </span>
+      <div class="search-progress-desc">
+        多源并发，极速为你查找精彩内容
+      </div>
+    </div>
+    <div class="sidebar-content">
       <div v-if="relatedVideosLoading" class="loading-container">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">
-          正在{{ searchStage === '全部源' ? '使用全部源' : '使用默认源' }}并发搜索相关视频...
+        <div class="modern-loading-spinner">
+          <span class="modern-dot"></span>
+          <span class="modern-dot"></span>
+          <span class="modern-dot"></span>
         </div>
-        <div v-if="searchStage === '全部源'" class="loading-subtext">
-          默认源无结果，正在扩大搜索范围
-        </div>
-        <div class="search-progress">
-          <div class="progress-bar">
-            <div 
-              class="progress-fill" 
-              :style="{ width: `${(searchProgress.completed / searchProgress.total) * 100}%` }"
-            ></div>
-          </div>
-          <div class="progress-text">
-            搜索进度: {{ searchProgress.completed }}/{{ searchProgress.total }}
-          </div>
-        </div>
+        <div class="loading-text">请稍候，正在为你查找最优视频资源…</div>
       </div>
-      
-      <div v-else-if="displayedVideos.length > 0" class="recommendations-list">
-        <div 
-          v-for="(video, index) in displayedVideos" 
-          :key="`video-${index}-${video.vod_name || video.title || index}-${video.source_page || 1}`"
-          :class="['recommendation-item', { 'current-video': isCurrentVideo(video) }]" 
-          @click="selectRelatedVideo(video)"
-        >
-          <div class="recommendation-thumbnail">
-            <img 
-              v-if="getVideoThumbnail(video)" 
-              :src="getVideoThumbnail(video)" 
-              :alt="getVideoTitle(video)"
-              @error="onImageError"
-              loading="lazy"
-            />
-            <div v-else class="thumbnail-placeholder">
-              <div class="placeholder-icon">🎬</div>
-            </div>
-            <div class="thumbnail-overlay">
-              <div class="play-btn">▶</div>
-            </div>
-            <div class="video-source-badge">{{ getVideoSource(video) }}</div>
-          </div>
-          <div class="recommendation-info">
-            <div class="recommendation-title">{{ getVideoTitle(video) }}</div>
-            
-            <div class="video-basic-info">
-              <div class="info-row">
-                <span class="info-label">类型:</span>
-                <span class="info-value">{{ getVideoType(video) }}</span>
-              </div>
-              <div v-if="getVideoYear(video)" class="info-row">
-                <span class="info-label">年份:</span>
-                <span class="info-value">{{ getVideoYear(video) }}</span>
-              </div>
-              <div v-if="getVideoRating(video)" class="info-row">
-                <span class="info-label">评分:</span>
-                <span class="info-value rating-value">★ {{ getVideoRating(video) }}分</span>
-              </div>
-            </div>
-          </div>
-          <button class="more-options">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <circle cx="12" cy="5" r="2"/>
-              <circle cx="12" cy="12" r="2"/>
-              <circle cx="12" cy="19" r="2"/>
-            </svg>
+      <template v-else-if="displayedVideos.length > 0">
+        <div class="recommendation-mobile-list">
+          <VideoCard
+            v-for="(video, index) in displayedVideos"
+            :key="`video-${index}-${video.vod_name || video.title || index}-${video.source_page || 1}`"
+            :video="video"
+            :source="getVideoSource(video)"
+            @click="$emit('video-select', video)"
+            :class="{ active: isCurrentVideo(video) }"
+          />
+        </div>
+        <div v-if="hasMoreData" class="mobile-load-more">
+          <button class="mobile-load-more-btn" @click="$emit('load-more')">
+            加载更多
           </button>
         </div>
-        
-        <div v-if="displayedVideos.length > 0 && hasMoreData" class="load-more-container">
-          <div v-if="isLoadingMore" class="loading-more">
-            <div class="loading-spinner-small"></div>
-            <span>加载更多...</span>
-          </div>
-          <button 
-            v-else 
-            class="load-more-btn" 
-            @click="loadMoreVideos"
-          >
-            查看更多 (还有 {{ allVideosData.length - displayedVideos.length }} 个视频)
-          </button>
-        </div>
-        
-        <div v-if="allVideosData.length > 0" class="videos-stats">
-          已显示 {{ displayedVideos.length }} / {{ allVideosData.length }} 个相关视频
-        </div>
-      </div>
-      
-      <div v-else-if="!relatedVideosLoading" class="no-results">
+      </template>
+      <div v-else class="no-results">
         <div class="no-results-icon">🔍</div>
         <div class="no-results-text">暂无相关推荐</div>
       </div>
     </div>
   </div>
+  <div v-if="visible" class="sidebar-mask" @click="$emit('close')"></div>
 </template>
 
 <script>
-import { defineComponent, ref, computed } from 'vue'
-
+import { defineComponent } from 'vue'
+import VideoCard from './VideoCard.vue'
 export default defineComponent({
   name: 'RecommendationsMobile',
+  components: { VideoCard },
   props: {
-    videoData: {
-      type: Object,
-      required: false,
-      default: () => ({})
-    },
-    relatedVideosLoading: {
-      type: Boolean,
-      default: false
-    },
-    searchStage: {
-      type: String,
-      default: '默认源'
-    },
-    searchProgress: {
-      type: Object,
-      default: () => ({ completed: 0, total: 0 })
-    },
-    availableSources: {
-      type: Array,
-      default: () => []
-    },
-    displayedVideos: {
-      type: Array,
-      default: () => []
-    },
-    allVideosData: {
-      type: Array,
-      default: () => []
-    },
-    hasMoreData: {
-      type: Boolean,
-      default: false
-    },
-    isLoadingMore: {
-      type: Boolean,
-      default: false
-    }
-  },
-  emits: ['video-select', 'search-all-sources', 'load-more'],
-  setup(props, { emit }) {
-    const getVideoTitle = (video) => {
-      return video.title || video.vod_name || video.name || '未知标题'
-    }
-
-    const getVideoThumbnail = (video) => {
-      const thumbnail = video.cover || video.vod_pic || video.pic || video.poster
-      if (thumbnail && thumbnail.trim() && !thumbnail.includes('placeholder.com')) {
-        return thumbnail
-      }
-      return null
-    }
-
-    const getVideoYear = (video) => {
-      return video.year || video.vod_year || ''
-    }
-
-    const getVideoType = (video) => {
-      return video.type || video.type_name || video.vod_type || '视频'
-    }
-
-    const getVideoRating = (video) => {
-      const rating = video.rate || video.vod_score || video.rating || video.score
-      if (rating && rating !== '0' && rating !== '0.0') {
-        return rating
-      }
-      return null
-    }
-
-    const getVideoSource = (video) => {
-      if (video.search_source) {
-        // 优先从后端获取的源列表中查找
-        const sourceInfo = availableSources.value.find(s => s.code === video.search_source)
-        if (sourceInfo) {
-          return sourceInfo.name
-        }
-        
-        // 如果后端没有，使用本地映射
-        const sourceMap = {
-          'dbzy': '豆瓣资源',
-          'bfzy': '暴风资源',
-          'hnzy': '红牛资源', 
-          'ffzy': '非凡资源',
-          'lzzy': '量子资源',
-          'dyttzy': '电影天堂资源',
-          'subzyapi': '速播资源',
-          'wolongzyw': '卧龙资源',
-          'wolong': '卧龙资源',
-          'mozhua': '魔爪资源',
-          'zuid': '最大资源',
-          'ruyi': '如意资源',
-          'heimuer': '黑木耳',
-          'mdzy': '魔都资源',
-          'baidu': '百度云资源',
-          'ikun': 'iKun资源',
-          'tyyszy': '天涯资源',
-          'jisu': '极速资源',
-          'wujin': '无尽资源',
-          'wwzy': '旺旺短剧',
-          'zy360': '360资源'
-        }
-        return sourceMap[video.search_source] || video.search_source
-      }
-      return video.source_name || video.source || '视频源'
-    }
-
-    const isCurrentVideo = (video) => {
-      if (!props.videoData) return false
-      
-      const currentTitle = getVideoTitle(props.videoData)
-      const videoTitle = getVideoTitle(video)
-      const currentSource = getVideoSource(props.videoData)
-      const videoSource = getVideoSource(video)
-      
-      return currentTitle === videoTitle && currentSource === videoSource
-    }
-
-    const onImageError = (event) => {
-      event.target.style.display = 'none'
-    }
-
-    const selectRelatedVideo = (video) => {
-      console.log('选择相关视频:', video)
-      emit('video-select', video)
-    }
-
-    const searchWithAllSources = () => {
-      emit('search-all-sources')
-    }
-
-    const loadMoreVideos = () => {
-      emit('load-more')
-    }
-    
-    return {
-      getVideoTitle,
-      getVideoThumbnail,
-      getVideoYear,
-      getVideoType,
-      getVideoRating,
-      getVideoSource,
-      isCurrentVideo,
-      onImageError,
-      selectRelatedVideo,
-      searchWithAllSources,
-      loadMoreVideos
-    }
+    visible: Boolean,
+    relatedVideosLoading: Boolean,
+    displayedVideos: Array,
+    hasMoreData: Boolean,
+    getVideoTitle: Function,
+    getVideoThumbnail: Function,
+    getVideoYear: Function,
+    getVideoType: Function,
+    getVideoRating: Function,
+    getVideoSource: Function,
+    isCurrentVideo: Function,
+    searchStage: String,
+    searchProgress: Object
+    // 移除 isFirstOpen
   }
 })
 </script>
 
 <style scoped>
-.recommendations-mobile {
-  width: 100%;
-}
-
-.recommendations-section {
-  padding: 16px;
-}
-
-.section-header {
+.mobile-recommendations-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 10002;
+  background: #18192b;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+  border-radius: 0;
+  overflow: hidden;
+  transition: opacity 0.2s;
+  opacity: 1;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
+  flex-direction: column;
 }
-
-.section-title {
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px 8px 18px;
+  background: #23244a;
+  border-radius: 0;
+  border-bottom: 1px solid #23244a;
+}
+.sidebar-title {
   font-size: 16px;
   font-weight: 600;
-  color: #ffffff;
-  margin: 0;
+  color: #fff;
 }
-
-.search-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.search-all-sources-btn {
+.sidebar-searchall-btn {
   background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
+  color: #fff;
   border: none;
-  padding: 6px 10px;
-  border-radius: 6px;
-  cursor: pointer;
+  border-radius: 16px;
+  padding: 4px 12px;
+  margin-right: 8px;
+  font-size: 13px;
+  font-weight: 500;
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.search-all-sources-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #5b5fef, #7c3aed);
-  transform: translateY(-1px);
-}
-
-.search-all-sources-btn:disabled {
-  background: #4b5563;
-  cursor: not-allowed;
-  transform: none;
-  opacity: 0.6;
-}
-
-.btn-icon {
-  font-size: 12px;
-}
-
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-  color: #aaaaaa;
-}
-
-.loading-spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid #3a3b5a;
-  border-top: 3px solid #6366f1;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 12px;
-}
-
-.loading-text {
-  font-size: 14px;
-  text-align: center;
-  margin-bottom: 4px;
-}
-
-.loading-subtext {
-  font-size: 12px;
-  text-align: center;
-  color: #888888;
-  font-style: italic;
-}
-
-.search-progress {
-  margin-top: 16px;
-  width: 100%;
-  max-width: 300px;
-}
-
-.progress-bar {
-  width: 100%;
-  height: 6px;
-  background: #374151;
-  border-radius: 3px;
-  overflow: hidden;
-  margin-bottom: 8px;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #6366f1, #8b5cf6);
-  border-radius: 3px;
-  transition: width 0.3s ease;
-}
-
-.progress-text {
-  font-size: 12px;
-  color: #9ca3af;
-  text-align: center;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.recommendations-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.recommendation-item {
-  display: flex;
-  gap: 12px;
   cursor: pointer;
   transition: background 0.2s;
-  padding: 8px;
-  border-radius: 8px;
 }
-
-.recommendation-item:hover {
-  background: #1a1a1a;
-}
-
-.recommendation-item.current-video {
-  border: 2px solid #6366f1;
-  background: linear-gradient(135deg, #2a2d5a, #3a3d6a);
-  position: relative;
-}
-
-.recommendation-item.current-video::before {
-  content: "正在播放";
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 6px;
-  z-index: 2;
-}
-
-.recommendation-thumbnail {
-  position: relative;
-  width: 120px;
-  height: 68px;
-  background: linear-gradient(135deg, #272727, #373737);
-  border-radius: 8px;
-  flex-shrink: 0;
-  overflow: hidden;
-}
-
-.recommendation-thumbnail img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  background: #18192b;
-}
-
-.thumbnail-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #374151, #4b5563);
-}
-
-.placeholder-icon {
-  font-size: 24px;
+.sidebar-searchall-btn:disabled {
+  background: #4b5563;
+  cursor: not-allowed;
   opacity: 0.6;
-  color: #6b7280;
 }
-
-.thumbnail-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.3);
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.recommendation-item:hover .thumbnail-overlay {
-  opacity: 1;
-}
-
-.play-btn {
-  color: white;
-  font-size: 20px;
-  opacity: 0.9;
-}
-
-.video-source-badge {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 500;
-  max-width: 80px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.recommendation-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.recommendation-title {
-  font-size: 14px;
-  font-weight: 500;
-  color: #ffffff;
-  line-height: 1.3;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.video-basic-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.info-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  line-height: 1.2;
-}
-
-.info-label {
-  color: #9ca3af;
-  font-weight: 500;
-  min-width: 32px;
+.sidebar-searchall-btn svg {
   flex-shrink: 0;
 }
-
-.info-value {
-  color: #e5e7eb;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.rating-value {
-  color: #fbbf24;
-  font-weight: 600;
-}
-
-.more-options {
+.sidebar-close-btn {
   background: none;
   border: none;
-  color: #aaaaaa;
+  color: #fff;
   cursor: pointer;
   padding: 4px;
   border-radius: 50%;
   transition: background 0.2s;
-  align-self: flex-start;
 }
-
-.more-options:hover {
-  background: #272727;
+.sidebar-close-btn:hover {
+  background: #23244a;
 }
-
-.load-more-container {
-  padding: 16px 4px;
-  text-align: center;
+.sidebar-content {
+  flex: 1;
+  padding: 10px 8px 0 8px;
+  overflow-y: auto;
 }
-
-.load-more-btn {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
-  border: none;
-  padding: 12px 24px;
+.recommendation-mobile-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.recommendation-mobile-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  background: #23244a;
   border-radius: 8px;
+  padding: 6px 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+  min-height: 120px;
+}
+.recommendation-mobile-item.active {
+  background: #6366f1;
+  color: #fff;
+}
+.recommendation-mobile-thumb {
+  width: 100%;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: #18192b;
+  flex-shrink: 0;
+}
+.recommendation-mobile-info {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 2px 0 2px;
+}
+.recommendation-mobile-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.2;
+  margin-bottom: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recommendation-mobile-meta {
+  font-size: 10px;
+  color: #a5a5a5;
+  margin-bottom: 0;
+}
+.recommendation-mobile-source {
+  font-size: 10px;
+  color: #10b981;
+}
+.mobile-load-more {
+  text-align: center;
+  margin: 16px 0 0 0;
+}
+.mobile-load-more-btn {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  border: none;
+  padding: 8px 24px;
+  border-radius: 20px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.12);
+  transition: background 0.2s;
 }
-
-.load-more-btn:hover {
-  background: linear-gradient(135deg, #5b5fef, #7c3aed);
-  transform: translateY(-1px);
+.mobile-load-more-btn:hover {
+  background: #7c3aed;
 }
-
-.loading-more {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  color: #a5a5a5;
-  font-size: 14px;
-}
-
-.loading-spinner-small {
-  width: 16px;
-  height: 16px;
-  border: 2px solid #374151;
-  border-top: 2px solid #6366f1;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-.videos-stats {
-  padding: 8px 4px;
-  text-align: center;
-  font-size: 12px;
-  color: #6b7280;
-  border-top: 1px solid #374151;
-  margin-top: 8px;
-}
-
 .no-results {
+  text-align: center;
+  color: #aaa;
+  margin-top: 40px;
+}
+.no-results-icon {
+  font-size: 40px;
+  margin-bottom: 8px;
+}
+.sidebar-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.18);
+  z-index: 10001;
+}
+.search-progress-tip {
   display: flex;
   flex-direction: column;
   align-items: center;
+  margin: 12px 0 8px 0;
+  font-size: 15px;
+  color: #a5a5a5;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.search-progress-animated {
+  display: flex;
+  gap: 3px;
+  margin-bottom: 2px;
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #6366f1;
+  opacity: 0.7;
+  animation: dot-bounce 1.2s infinite;
+}
+.dot1 { animation-delay: 0s; }
+.dot2 { animation-delay: 0.2s; }
+.dot3 { animation-delay: 0.4s; }
+@keyframes dot-bounce {
+  0%, 80%, 100% { transform: scale(0.8); opacity: 0.7; }
+  40% { transform: scale(1.3); opacity: 1; }
+}
+.search-progress-main {
+  font-size: 15px;
+  color: #fff;
+  font-weight: 600;
+}
+.search-progress-desc {
+  font-size: 12px;
+  color: #8b8baf;
+  margin-top: 2px;
+}
+.modern-loading-spinner {
+  display: flex;
+  gap: 6px;
   justify-content: center;
-  padding: 40px 20px;
-  color: #888888;
-  text-align: center;
+  align-items: center;
+  margin-bottom: 10px;
 }
-
-.no-results-icon {
-  font-size: 48px;
-  margin-bottom: 12px;
-  opacity: 0.6;
+.modern-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  opacity: 0.7;
+  animation: modern-dot-bounce 1.2s infinite;
 }
-
-.no-results-text {
-  font-size: 14px;
-  color: #aaaaaa;
+.modern-dot:nth-child(1) { animation-delay: 0s; }
+.modern-dot:nth-child(2) { animation-delay: 0.2s; }
+.modern-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes modern-dot-bounce {
+  0%, 80%, 100% { transform: scale(0.8); opacity: 0.7; }
+  40% { transform: scale(1.3); opacity: 1; }
+}
+@media (max-width: 480px) {
+  .mobile-recommendations-sidebar {
+    width: 100vw;
+    max-width: 100vw;
+    min-width: 0;
+    border-radius: 0;
+    padding-bottom: 0;
+  }
+  .sidebar-header {
+    padding: 14px 10px 8px 10px;
+  }
 }
 </style>
