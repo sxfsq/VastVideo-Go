@@ -1,1 +1,14 @@
+# 克隆项目
+git clone https://github.com/VastPools/VastVideo-Go.git
+cd VastVideo-Go
 
+# 安装依赖
+go mod tidy
+
+# 编译项目
+go build -o vastvideo-go.exe
+
+
+或直接编译
+go build -o vastvideo-go
+然后将生成的vastvideo-go文件改为vastvideo-go.exe
