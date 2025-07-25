@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>资源检测</title>
+<style>
+body {
+  background: #f4f6fa;
+  font-family: Arial, sans-serif;
+  margin: 0;
+}
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 28px 2vw 0 2vw;
+}
+#toolbar, #stats {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px #0001;
+  margin-bottom: 18px;
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+#toolbar { flex-wrap: wrap; }
+#stats { flex-wrap: wrap; font-size: 1.08rem; gap: 18px; }
+#list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 18px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+.card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px #0001;
+  border: 1.5px solid #f0f1f7;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 6px 10px 6px;
+  min-height: 54px;
+  transition: box-shadow .2s, border .2s;
+  font-size: 1.02rem;
+  cursor: pointer;
+}
+.card:hover {
+  box-shadow: 0 6px 24px #6c63ff22;
+  border: 1.5px solid #6c63ff;
+}
+.card-header {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.card-title {
+  font-weight: 500;
+  font-size: 1.04rem;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90%;
+  margin-bottom: 6px;
+}
+.card-title[title]:hover::after {
+  /* 可用浏览器默认title */
+}
+.card-status {
+  font-size: 0.98rem;
+  padding: 2px 14px;
+  border-radius: 14px;
+  font-weight: bold;
+  margin: 0 auto;
+  display: inline-block;
+  letter-spacing: 1px;
+  box-shadow: 0 1px 4px #0001;
+}
+.card-waiting { border: 1.5px dashed #bbb !important; background: #f7f7fa !important; }
+.card-checking { border: 1.5px solid #ffd93d !important; background: #fffbe6 !important; }
+.card .card-status.card-waiting { background: #f7f7fa; color: #aaa; }
+.card .card-status.card-checking { background: #fffbe6; color: #e6b800; }
+.status-ok { background: #eafaf1; color: #2ecc71; }
+.status-fail { background: #fff0f0; color: #e74c3c; }
+.status-unknown { background: #f3f3f3; color: #888; }
+.card-link { color: #6c63ff; text-decoration: none; font-size: 0.98rem; word-break: break-all; }
+.card-link:hover { text-decoration: underline; }
+.card-row { display: flex; align-items: center; gap: 10px; font-size: 0.97rem; color: #555; }
+.card-label { color: #aaa; font-size: 0.95em; margin-right: 2px; }
+.card-btn { padding: 2px 10px; font-size: 13px; margin-left: 8px; background: #f0f1f7; color: #6c63ff; border: 1px solid #e0e1e7; border-radius: 6px; cursor: pointer; transition: background 0.2s, color 0.2s; }
+.card-btn:hover { background: #6c63ff; color: #fff; }
+#jsonModal { display:none; position:fixed; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); z-index:9999; }
+#jsonModalContent { background:#fff; padding:20px; border-radius:8px; max-width:600px; margin:60px auto; position:relative; box-shadow: 0 8px 32px rgba(0,0,0,0.18); }
+#closeModal { position:absolute; right:10px; top:10px; cursor:pointer; font-size:18px; color: #888; }
+pre { background:#f7f7f7; padding:10px; border-radius:4px; overflow:auto; font-size: 14px; }
+@media (max-width: 900px) {
+  .container { padding: 12px 1vw 0 1vw; }
+  #list { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+  .card-title { font-size: 0.92rem; }
+  .card-status { font-size: 0.88rem; padding: 2px 8px; }
+}
+@media (max-width: 600px) {
+  .container { padding: 6px 0 0 0; }
+  #toolbar, #stats { padding: 7px 6px; font-size: 0.98rem; }
+  #list { grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 5px; }
+  .card-title { max-width: 38px; font-size: 0.85rem; }
+  .card-status { font-size: 0.78rem; min-width: 24px; }
+  .card { min-height: 32px; padding: 4px 2px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>第三方资源检测</h2>
+  <div id="toolbar">
+    <button class="btn" id="startBtn" onclick="startCheck()">开始检查</button>
+    <span>筛选：</span>
+    <button class="tag selected" id="tag-all" onclick="filterList('all')">全部</button>
+    <button class="tag" id="tag-ok" onclick="filterList('ok')">可用</button>
+    <button class="tag" id="tag-fail" onclick="filterList('fail')">不可用</button>
+    <button class="tag" id="tag-unknown" onclick="filterList('unknown')">未检查</button>
+  </div>
+  <div id="progressText"></div>
+  <div id="progressBarWrap"><div id="progressBar"></div></div>
+  <div id="stats"></div>
+  <ul id="list"></ul>
+</div>
+<div id="jsonModal"><div id="jsonModalContent"><span id="closeModal" onclick="closeModal()">&times;</span><h3>API返回结果</h3><pre id="jsonContent"></pre></div></div>
+<!-- 弹出框：展示API返回数据 -->
+<div id="resultModal" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.38);align-items:center;justify-content:center;">
+  <div id="resultModalContent" style="background:#fff;border-radius:14px;max-width:420px;width:92vw;box-shadow:0 8px 32px #0003;padding:0 0 18px 0;position:relative;overflow:auto;">
+    <button id="closeResultModal" style="position:absolute;right:12px;top:10px;background:none;border:none;font-size:22px;color:#888;cursor:pointer;z-index:2;">×</button>
+    <div id="modalCard" style="padding:24px 18px 0 18px;"></div>
+    <div id="modalJson" style="padding:12px 18px 0 18px;max-height:260px;overflow:auto;"></div>
+  </div>
+</div>
+<script>
+let allSources = [];
+let currentFilter = 'all';
+let checkCount = 0;
+let isChecking = false;
+function setLockUI(lock) {
+  isChecking = lock;
+  document.getElementById('startBtn').disabled = lock;
+  document.querySelectorAll('.filter-btn').forEach(btn => btn.disabled = lock);
+  if(lock) {
+    document.body.style.pointerEvents = 'auto'; // 允许滚动
+    document.body.style.opacity = '0.98';
+  } else {
+    document.body.style.opacity = '1';
+  }
+}
+window.onload = function() {
+  fetch('/api/scorpio_sources')
+    .then(res => res.json())
+    .then(data => {
+      if (data.success && Array.isArray(data.data)) {
+        allSources = data.data;
+        renderList();
+        renderStats();
+      } else {
+        document.getElementById('list').innerHTML = '<li style="color:#e74c3c;">资源加载失败</li>';
+      }
+    })
+    .catch(() => {
+      document.getElementById('list').innerHTML = '<li style="color:#e74c3c;">资源加载失败</li>';
+    });
+  document.getElementById('startBtn').onclick = startCheck;
+};
+function renderList() {
+  var list = document.getElementById('list');
+  list.innerHTML = '';
+  let filtered = allSources.filter(function(s) {
+    if (currentFilter === 'ok') return s.is_valid === true;
+    if (currentFilter === 'fail') return s.is_valid === false;
+    if (currentFilter === 'unknown') return s.is_valid === undefined;
+    return true;
+  });
+  filtered.forEach(function(s, i) {
+    var statusClass = s._checking ? 'card-checking' : (s._waiting ? 'card-waiting' : (s.is_valid === undefined ? 'status-unknown' : (s.is_valid ? 'status-ok' : 'status-fail')));
+    var statusText = s._checking ? '⏳ 正在检查' : (s._waiting ? '… 等待' : (s.is_valid === undefined ? '… 未检查' : (s.is_valid ? '✔ 可用' : '✖ 不可用')));
+    var card = document.createElement('li');
+    card.className = 'card ' + statusClass;
+    card.id = 'item' + i;
+    card.innerHTML = `
+      <div class="card-header">
+        <span class="card-title" title="${s.name}">${s.name}</span>
+        <span class="card-status ${statusClass}">${statusText}</span>
+      </div>
+    `;
+    // 所有卡片都可以点击，执行单点测试
+    card.style.cursor = 'pointer';
+    card.onclick = function() { 
+      if (!isChecking) { // 批量检查时不允许单点测试
+        singleCheck(i, s);
+      }
+    };
+    list.appendChild(card);
+  });
+}
+function renderStats() {
+  let total = allSources.length;
+  let ok = allSources.filter(s => s.is_valid === true).length;
+  let fail = allSources.filter(s => s.is_valid === false).length;
+  let unknown = allSources.filter(s => s.is_valid === undefined).length;
+  document.getElementById('stats').innerHTML =
+    `<b>总数：</b> ${total} <b>可用：</b> <span style='color:#2ecc71;'>${ok}</span> <b>不可用：</b> <span style='color:#e74c3c;'>${fail}</span> <b>未检查：</b> <span style='color:#888;'>${unknown}</span>`;
+}
+function filterList(type) {
+  currentFilter = type;
+  document.querySelectorAll('.tag').forEach(btn => btn.classList.remove('selected'));
+  document.getElementById('tag-' + type).classList.add('selected');
+  renderList();
+  renderStats();
+}
+function startCheck() {
+  if(isChecking) return;
+  setLockUI(true);
+  // 清空统计
+  document.getElementById('stats').innerHTML = '';
+  checkCount = 0;
+  let total = allSources.length;
+  document.getElementById('progressBarWrap').style.display = 'block';
+  document.getElementById('progressText').style.display = 'block';
+  updateProgress(0, total);
+  let concurrency = 10;
+  let running = 0;
+  let next = 0;
+  allSources.forEach(s => { s._waiting = true; s._checking = false; s.is_valid = undefined; });
+  renderList();
+  function runNext() {
+    while (running < concurrency && next < total) {
+      let idx = next++;
+      running++;
+      allSources[idx]._waiting = false;
+      allSources[idx]._checking = true;
+      renderList();
+      checkOne(idx, () => {
+        running--;
+        checkCount++;
+        allSources[idx]._checking = false;
+        updateProgress(checkCount, total);
+        renderList();
+        renderStats();
+        if (checkCount >= total) {
+          document.getElementById('progressBarWrap').style.display = 'none';
+          document.getElementById('progressText').style.display = 'none';
+          setLockUI(false);
+        } else {
+          runNext();
+        }
+      });
+    }
+  }
+  runNext();
+}
+function checkOne(idx, cb) {
+  let s = allSources[idx];
+  fetch('/api/check_source?api=' + encodeURIComponent(s.api))
+    .then(res => res.json())
+    .then(d => {
+      if (d.success) {
+        allSources[idx] = Object.assign(allSources[idx] || {}, d);
+        var card = document.getElementById('item'+idx);
+        if (card && d.is_valid) {
+          var btn = `<button class='card-btn' onclick='showJson(${idx})'>查看结果</button>`;
+          if (!card.innerHTML.includes('查看结果')) card.innerHTML += btn;
+          if(d.result_json){
+            window['api_result_'+idx] = d.result_json;
+          }
+        }
+      }
+      cb && cb();
+    })
+    .catch(() => { cb && cb(); });
+}
+function updateProgress(done, total) {
+  let percent = total === 0 ? 0 : Math.round(done / total * 100);
+  document.getElementById('progressBar').style.width = percent + '%';
+  document.getElementById('progressText').textContent = `检测进度：${done} / ${total}（${percent}%）`;
+}
+function showJson(idx) {
+  var data = window['api_result_'+idx];
+  if (!data) return;
+  document.getElementById('jsonContent').textContent = JSON.stringify(data, null, 2);
+  document.getElementById('jsonModal').style.display = 'block';
+}
+function showResultModal(s) {
+  var modal = document.getElementById('resultModal');
+  var modalCard = document.getElementById('modalCard');
+  var modalJson = document.getElementById('modalJson');
+  // 兼容多种API返回结构，优先找视频卡片数据
+  var v = null;
+  var rj = s.result_json || {};
+  if (Array.isArray(rj.list) && rj.list.length > 0) {
+    v = rj.list[0];
+  } else if (Array.isArray(rj.data && rj.data.list) && rj.data.list.length > 0) {
+    v = rj.data.list[0];
+  } else if (Array.isArray(rj.subjects) && rj.subjects.length > 0) {
+    v = rj.subjects[0];
+  } else if (rj.data && typeof rj.data === 'object') {
+    v = rj.data;
+  } else if (rj.subject && typeof rj.subject === 'object') {
+    v = rj.subject;
+  } else if (typeof rj === 'object') {
+    v = rj;
+  }
+  v = v || {};
+  var title = v.title || v.name || v.vod_name || v.vod_title || s.name || '';
+  var cover = v.cover || v.pic || v.vod_pic || v.img || '';
+  var year = v.year || v.pubdate || v.vod_year || '';
+  var rate = v.rate || v.rating || v.vod_score || '';
+  var type = v.type || v.type_name || '';
+  var isVideoCard = !!(title);
+  if (isVideoCard) {
+    modalCard.innerHTML = '<div style="background:#23244a;border-radius:12px;box-shadow:0 2px 8px #0002;padding:0 0 12px 0;display:flex;flex-direction:column;align-items:center;">' +
+      (cover ? '<img src="' + cover + '" alt="' + title + '" style="width:110px;height:160px;object-fit:cover;border-radius:8px;margin:18px 0 8px 0;box-shadow:0 2px 8px #0002;">' : '<div style="width:110px;height:160px;background:#444;border-radius:8px;margin:18px 0 8px 0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;">暂无封面</div>') +
+      '<div style="font-size:1.08rem;font-weight:600;color:#fff;text-align:center;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + title + '</div>' +
+      '<div style="display:flex;gap:6px;justify-content:center;margin:8px 0 0 0;flex-wrap:wrap;">' +
+      (type ? '<span style="background:#ff6b6b;color:#fff;padding:2px 8px;border-radius:6px;font-size:12px;">' + type + '</span>' : '') +
+      (year ? '<span style="background:#ffd93d;color:#333;padding:2px 8px;border-radius:6px;font-size:12px;">' + year + '</span>' : '') +
+      (rate ? '<span style="background:#eafaf1;color:#2ecc71;padding:2px 8px;border-radius:6px;font-size:12px;">★ ' + rate + '</span>' : '') +
+      '</div>' +
+      '<div style="color:#b3b6d4;font-size:12px;margin-top:8px;">' + (s.api ? 'API: <a href="' + s.api + '" target="_blank" style="color:#ffd93d;text-decoration:underline;">' + s.api + '</a>' : '') + '</div>' +
+      '<div style="color:#b3b6d4;font-size:12px;margin-top:2px;">响应时间: <span style="color:#6bcf7f;">' + (s.response_time ? s.response_time + 'ms' : '-') + '</span> &nbsp; 评级: <span style="color:#ffd93d;">' + (s.response_level || '-') + '</span></div>' +
+      '</div>';
+  } else {
+    modalCard.innerHTML = '<div style="display:flex;align-items:center;gap:12px;">' +
+      '<div style="flex:1;">' +
+      '<div style="font-size:1.15rem;font-weight:600;color:#23244a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + s.name + '</div>' +
+      '<div style="font-size:0.98rem;color:#888;margin:4px 0 0 0;word-break:break-all;">API: <a href="' + s.api + '" target="_blank" style="color:#6c63ff;text-decoration:underline;">' + s.api + '</a></div>' +
+      '<div style="font-size:0.92rem;color:#888;margin:2px 0 0 0;">响应时间: <span style="color:#389e0d;">' + (s.response_time ? s.response_time + 'ms' : '-') + '</span> &nbsp; 评级: <span style="color:#6c63ff;">' + (s.response_level || '-') + '</span></div>' +
+      '</div>' +
+      '</div>';
+  }
+  modalJson.innerHTML = '<pre style="background:#f7f7fa;border-radius:8px;padding:10px 8px;font-size:13px;color:#23244a;">' + JSON.stringify(s.result_json, null, 2) + '</pre>';
+  modal.style.display = 'flex';
+}
+document.getElementById('closeResultModal').onclick = function() {
+  document.getElementById('resultModal').style.display = 'none';
+};
+// 点击弹窗外关闭
+window.onclick = function(e) {
+  var modal = document.getElementById('resultModal');
+  if (modal.style.display === 'flex' && e.target === modal) {
+    modal.style.display = 'none';
+  }
+};
+function closeModal() {
+  document.getElementById('jsonModal').style.display = 'none';
+}
+function singleCheck(idx, s) {
+  // 设置单点检查状态
+  allSources[idx]._checking = true;
+  allSources[idx]._waiting = false;
+  renderList();
+  // 执行单点测试
+  fetch('/api/check_source?api=' + encodeURIComponent(s.api))
+    .then(res => res.json())
+    .then(d => {
+      if (d.success) {
+        allSources[idx] = Object.assign(allSources[idx] || {}, d);
+        allSources[idx]._checking = false;
+        renderList();
+        renderStats();
+        // 如果测试成功且有数据，显示视频卡片
+        if (d.is_valid && d.result_json) {
+          showResultModal(allSources[idx]);
+        }
+      } else {
+        allSources[idx]._checking = false;
+        allSources[idx].is_valid = false;
+        renderList();
+        renderStats();
+      }
+    })
+    .catch(() => {
+      allSources[idx]._checking = false;
+      allSources[idx].is_valid = false;
+      renderList();
+      renderStats();
+    });
+}
+</script>
+</body>
+</html> 
