@@ -30,9 +30,9 @@ show_help() {
     echo "  $0 --backend   # 仅启动后端"
     echo ""
     echo "服务地址:"
-    echo "  前端本地: http://localhost:3000"
-    echo "  后端本地: http://localhost:8228"
-    echo "  (支持IP访问，启动后将显示网络地址)"
+echo "  前端本地: http://localhost:8228"
+echo "  后端本地: http://localhost:8228"
+echo "  (支持IP访问，启动后将显示网络地址)"
     echo ""
 }
 
@@ -251,9 +251,9 @@ LOCAL_IP=$(get_local_ip)
 echo "📍 访问地址:"
 case $MODE in
     frontend)
-        echo "   本地访问: http://localhost:3000"
+        echo "   本地访问: http://localhost:8228"
         if [ ! -z "$LOCAL_IP" ]; then
-            echo "   网络访问: http://$LOCAL_IP:3000"
+            echo "   网络访问: http://$LOCAL_IP:8228"
         fi
         ;;
     backend)
@@ -263,10 +263,10 @@ case $MODE in
         fi
         ;;
     fullstack)
-        echo "   前端本地: http://localhost:3000"
+        echo "   前端本地: http://localhost:8228"
         echo "   后端本地: http://localhost:8228"
         if [ ! -z "$LOCAL_IP" ]; then
-            echo "   前端网络: http://$LOCAL_IP:3000"
+            echo "   前端网络: http://$LOCAL_IP:8228"
             echo "   后端网络: http://$LOCAL_IP:8228"
         fi
         ;;
@@ -296,13 +296,13 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
                 echo "❌ 前端服务启动失败"
             else
                 echo "🌐 自动启动浏览器..."
-                open "http://localhost:3000" 2>/dev/null || {
+                open "http://localhost:8228" 2>/dev/null || {
                     echo "⚠️  无法启动默认浏览器，请手动访问"
                 }
                 echo "✅ 浏览器已启动"
-                echo "📍 本地访问: http://localhost:3000"
+                echo "📍 本地访问: http://localhost:8228"
                 if [ ! -z "$LOCAL_IP" ]; then
-                    echo "📍 网络访问: http://$LOCAL_IP:3000"
+                    echo "📍 网络访问: http://$LOCAL_IP:8228"
                 fi
             fi
             ;;
@@ -339,15 +339,15 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
             if $FRONTEND_OK; then
                 echo "🌐 自动启动浏览器..."
                 # 启动浏览器访问前端页面
-                open "http://localhost:3000" 2>/dev/null || {
+                open "http://localhost:8228" 2>/dev/null || {
                     echo "⚠️  无法启动默认浏览器，请手动访问"
                 }
                 
                 echo "✅ 浏览器已启动"
-                echo "📍 前端本地: http://localhost:3000"
+                echo "📍 前端本地: http://localhost:8228"
                 echo "📍 后端本地: http://localhost:8228"
                 if [ ! -z "$LOCAL_IP" ]; then
-                    echo "📍 前端网络: http://$LOCAL_IP:3000"
+                    echo "📍 前端网络: http://$LOCAL_IP:8228"
                     echo "📍 后端网络: http://$LOCAL_IP:8228"
                 fi
             fi
@@ -358,9 +358,9 @@ else
     case $MODE in
         frontend)
             echo "📱 请手动访问:"
-            echo "   本地: http://localhost:3000"
+            echo "   本地: http://localhost:8228"
             if [ ! -z "$LOCAL_IP" ]; then
-                echo "   网络: http://$LOCAL_IP:3000"
+                echo "   网络: http://$LOCAL_IP:8228"
             fi
             ;;
         backend)
@@ -372,10 +372,10 @@ else
             ;;
         fullstack)
             echo "📱 请手动访问:"
-            echo "   前端本地: http://localhost:3000"
+            echo "   前端本地: http://localhost:8228"
             echo "   后端本地: http://localhost:8228"
             if [ ! -z "$LOCAL_IP" ]; then
-                echo "   前端网络: http://$LOCAL_IP:3000"
+                echo "   前端网络: http://$LOCAL_IP:8228"
                 echo "   后端网络: http://$LOCAL_IP:8228"
             fi
             ;;
