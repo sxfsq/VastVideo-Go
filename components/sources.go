@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -267,6 +268,52 @@ func (sc *SourcesConfig) HandleSourceSearchAPI(w http.ResponseWriter, r *http.Re
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 	log.Printf("✅ /api/source_search 请求 [IP:%s]", utils.GetRequestIP(r))
+}
+
+// HandleScorpioSourcesAPI 处理 /api/scorpio_sources 接口，返回 scorpio.json 中的全部内容
+func HandleScorpioSourcesAPI(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	f, err := os.Open("config/scorpio.json")
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": "无法读取scorpio.json: " + err.Error(),
+			"data":    nil,
+		})
+		return
+	}
+	defer f.Close()
+	var sources []map[string]interface{}
+	dec := json.NewDecoder(f)
+	if err := dec.Decode(&sources); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": "scorpio.json 解析失败: " + err.Error(),
+			"data":    nil,
+		})
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"data":    sources,
+		"count":   len(sources),
+	})
 }
 
 // searchSource 搜索指定源

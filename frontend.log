@@ -3,47 +3,9 @@
 > vite
 
 
-  VITE v5.4.19  ready in 111 ms
+  VITE v5.4.19  ready in 197 ms
 
   ➜  Local:   http://localhost:3000/
-  ➜  Network: http://10.147.18.183:3000/
-  ➜  Network: http://192.168.10.88:3000/
-18:02:31 [vite] hmr update /src/components/HomePage.vue, /src/components/SideBar.vue, /src/components/DouBan.vue, /src/components/VideoDetailDesktop.vue, /src/components/VideoDetailMobile.vue
-18:08:35 [vite] hmr update /src/App.vue
-18:12:46 [vite] hmr update /src/components/VideoDetailMobile.vue
-18:17:41 [vite] hmr update /src/components/VideoDetailMobile.vue
-18:17:49 [vite] hmr update /src/App.vue
-18:19:44 [vite] hmr update /src/components/RecommendationsMobile.vue?vue&type=style&index=0&scoped=9e4c7948&lang.css, /src/components/RecommendationsMobile.vue
-18:22:04 [vite] hmr update /src/components/VideoDetailMobile.vue
-18:22:04 [vite] Internal server error: Element is missing end tag.
-  Plugin: vite:vue
-  File: /Users/benson/GitHub/VastVideo-Go/web/src/components/VideoDetailMobile.vue:74:5
-  72 |      </button>
-  73 |      <!-- 相关推荐全屏弹窗 -->
-  74 |      <RecommendationsMobile
-     |       ^
-  75 |        :visible="showSidebar"
-  76 |        :related-videos-loading="relatedVideosLoading"
-      at createCompilerError (/Users/benson/GitHub/VastVideo-Go/web/node_modules/@vue/compiler-core/dist/compiler-core.cjs.js:1364:17)
-      at emitError (/Users/benson/GitHub/VastVideo-Go/web/node_modules/@vue/compiler-core/dist/compiler-core.cjs.js:2956:5)
-      at Object.onclosetag (/Users/benson/GitHub/VastVideo-Go/web/node_modules/@vue/compiler-core/dist/compiler-core.cjs.js:2315:13)
-      at Tokenizer.stateInClosingTagName (/Users/benson/GitHub/VastVideo-Go/web/node_modules/@vue/compiler-core/dist/compiler-core.cjs.js:785:16)
-      at Tokenizer.parse (/Users/benson/GitHub/VastVideo-Go/web/node_modules/@vue/compiler-core/dist/compiler-core.cjs.js:1143:16)
-      at Object.baseParse (/Users/benson/GitHub/VastVideo-Go/web/node_modules/@vue/compiler-core/dist/compiler-core.cjs.js:2995:13)
-      at Object.parse (/Users/benson/GitHub/VastVideo-Go/web/node_modules/@vue/compiler-dom/dist/compiler-dom.cjs.js:907:23)
-      at Object.parse$1 [as parse] (/Users/benson/GitHub/VastVideo-Go/web/node_modules/@vue/compiler-sfc/dist/compiler-sfc.cjs.js:1801:24)
-      at createDescriptor (file:///Users/benson/GitHub/VastVideo-Go/web/node_modules/@vitejs/plugin-vue/dist/index.mjs:74:43)
-      at handleHotUpdate (file:///Users/benson/GitHub/VastVideo-Go/web/node_modules/@vitejs/plugin-vue/dist/index.mjs:2155:26)
-18:22:18 [vite] hmr update /src/components/RecommendationsMobile.vue
-18:23:20 [vite] hmr update /src/components/VideoDetailMobile.vue
-18:23:38 [vite] hmr update /src/components/RecommendationsMobile.vue
-18:25:00 [vite] hmr update /src/components/RecommendationsMobile.vue?vue&type=style&index=0&scoped=9e4c7948&lang.css
-18:26:13 [vite] hmr update /src/components/RecommendationsMobile.vue?vue&type=style&index=0&scoped=9e4c7948&lang.css
-18:27:39 [vite] hmr update /src/components/DouBan.vue?vue&type=style&index=0&scoped=ef78af32&lang.css
-18:27:46 [vite] hmr update /src/components/HomePage.vue?vue&type=style&index=0&scoped=42781596&lang.css
-18:31:06 [vite] hmr update /src/components/HomePage.vue?vue&type=style&index=0&scoped=42781596&lang.css
-18:39:17 [vite] hmr update /src/components/HomePage.vue?vue&type=style&index=0&scoped=42781596&lang.css
-18:40:52 [vite] hmr update /src/App.vue?vue&type=style&index=0&lang.css
-19:18:53 [vite] hmr update /src/components/HomePage.vue?vue&type=style&index=0&scoped=42781596&lang.css
-19:19:08 [vite] hmr update /src/components/DouBan.vue?vue&type=style&index=0&scoped=ef78af32&lang.css
-19:21:18 [vite] hmr update /src/App.vue?vue&type=style&index=0&lang.css
+  ➜  Network: http://192.168.16.100:3000/
+  ➜  Network: http://10.211.55.2:3000/
+  ➜  Network: http://10.37.129.2:3000/

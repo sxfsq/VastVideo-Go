@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"runtime"
+	"sync"
 	"vastproxy-go/components"
 	"vastproxy-go/utils"
 )
@@ -26,6 +27,181 @@ var htmlContent embed.FS
 
 //go:embed config/config.ini
 var ConfigContent embed.FS
+
+//go:embed html/check_sources.html
+var checkSourcesHTML embed.FS
+
+// ScorpioSource 结构体
+// 用于解析和保存 scorpio.json 的每个资源
+// 只在 main.go 内部使用
+
+type ScorpioSource struct {
+	Name          string `json:"name"`
+	API           string `json:"api"`
+	LastCheckTime int64  `json:"last_check_time,omitempty"`
+	IsValid       *bool  `json:"is_valid,omitempty"`
+}
+
+const ScorpioJsonPath = "config/scorpio.json"
+
+// 读取scorpio.json
+func LoadScorpioSources() ([]*ScorpioSource, error) {
+	f, err := os.Open(ScorpioJsonPath)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	var sources []*ScorpioSource
+	dec := json.NewDecoder(f)
+	if err := dec.Decode(&sources); err != nil {
+		return nil, err
+	}
+	return sources, nil
+}
+
+// 保存scorpio.json
+func SaveScorpioSources(sources []*ScorpioSource) error {
+	data, err := json.MarshalIndent(sources, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(ScorpioJsonPath, data, 0644)
+}
+
+// 检查单个资源，返回是否可用、消息、JSON内容、响应时间（毫秒）
+func CheckSourceAPIWithBody(api string) (bool, string, interface{}, int64) {
+	start := time.Now()
+	client := &http.Client{Timeout: 15 * time.Second} // 增加最大等待时间
+	resp, err := client.Get(api)
+	cost := time.Since(start).Milliseconds()
+	if err != nil {
+		return false, err.Error(), nil, cost
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == 200 {
+		var result interface{}
+		dec := json.NewDecoder(resp.Body)
+		if err := dec.Decode(&result); err == nil {
+			return true, "ok", result, cost
+		}
+		return true, "ok (非JSON)", nil, cost
+	}
+	return false, fmt.Sprintf("HTTP %d", resp.StatusCode), nil, cost
+}
+
+// 资源检测页面
+func checkSourcesPageHandler(w http.ResponseWriter, r *http.Request) {
+	htmlBytes, err := checkSourcesHTML.ReadFile("html/check_sources.html")
+	if err != nil {
+		http.Error(w, "无法读取HTML模板", 500)
+		return
+	}
+	sources, err := LoadScorpioSources()
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Write(htmlBytes)
+	fmt.Fprintf(w, `<script>\nwindow._scorpio_sources = %s;\n</script>`, mustJson(sources))
+}
+
+func mustJson(v interface{}) string {
+	b, _ := json.Marshal(v)
+	return string(b)
+}
+
+// SSE流接口
+func checkSourcesStreamHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	sources, err := LoadScorpioSources()
+	if err != nil {
+		fmt.Fprintf(w, "data: {\"msg\":\"读取scorpio.json失败\"}\n\n")
+		w.(http.Flusher).Flush()
+		return
+	}
+
+	var mu sync.Mutex
+	for i, src := range sources {
+		go func(idx int, s *ScorpioSource) {
+			isValid, msg, result, cost := CheckSourceAPIWithBody(s.API)
+			t := time.Now().Unix()
+			// 响应时间评级
+			level := "快"
+			if cost > 8000 {
+				level = "慢"
+			} else if cost > 3000 {
+				level = "中"
+			}
+			mu.Lock()
+			s.LastCheckTime = t
+			s.IsValid = &isValid
+			SaveScorpioSources(sources)
+			mu.Unlock()
+			res := map[string]interface{}{
+				"index":           idx,
+				"name":            s.Name,
+				"api":             s.API,
+				"last_check_time": t,
+				"is_valid":        isValid,
+				"msg":             msg,
+				"response_time":   cost,
+				"response_level":  level,
+			}
+			if isValid && result != nil {
+				res["result_json"] = result
+			}
+			b, _ := json.Marshal(res)
+			fmt.Fprintf(w, "data: %s\n\n", b)
+			w.(http.Flusher).Flush()
+		}(i, src)
+	}
+
+	// 等待所有goroutine完成
+	time.Sleep(time.Duration(len(sources)) * 16 * time.Second)
+}
+
+// 检查单个资源API（前端逐个调用）
+func HandleCheckSourceAPI(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	api := r.URL.Query().Get("api")
+	if api == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": "Missing api parameter",
+		})
+		return
+	}
+	isValid, msg, result, cost := CheckSourceAPIWithBody(api)
+	level := "快"
+	if cost > 8000 {
+		level = "慢"
+	} else if cost > 3000 {
+		level = "中"
+	}
+	resp := map[string]interface{}{
+		"success":        true,
+		"is_valid":       isValid && result != nil,
+		"msg":            msg,
+		"response_time":  cost,
+		"response_level": level,
+	}
+	if isValid && result != nil {
+		resp["result_json"] = result
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+}
 
 var GlobalConfig *utils.Config
 
@@ -103,6 +279,15 @@ func main() {
 
 	// 添加过滤配置API路由
 	http.HandleFunc("/api/filter_config", filterConfigHandler)
+
+	// 新增：资源检测页面和SSE流
+	http.HandleFunc("/check_sources", checkSourcesPageHandler)
+	// 移除 http.HandleFunc("/check_sources/stream", ...) 及 checkSourcesStreamHandler 相关实现
+
+	// 添加 scorpio 源 API 路由
+	http.HandleFunc("/api/scorpio_sources", components.HandleScorpioSourcesAPI)
+	http.HandleFunc("/api/scorpio_sources/", components.HandleScorpioSourcesAPI)
+	http.HandleFunc("/api/check_source", HandleCheckSourceAPI)
 
 	// 获取本地IP地址
 	localIP := components.GetLocalIP()
